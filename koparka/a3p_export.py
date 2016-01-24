@@ -90,7 +90,9 @@ def generateNavmesh(tiles, navmap, heightmap, out_file, default_tile):
     navmesh.setColorScaleOff()
     navmesh.setMaterialOff()
     navmesh.setTextureOff()
-    navmesh.clearModelNodes()                
+    navmesh.clearModelNodes() 
+    #a3p likes the map on center so we move it
+    navmesh.setPos(-256, -256, 0)
     navmesh.flattenStrong()
     print 'writing to disk...',
     navmesh.writeBamFile(out_file)
