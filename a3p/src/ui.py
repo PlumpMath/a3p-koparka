@@ -32,7 +32,7 @@ class GameUI(DirectObject):
         self.specialReadySound = audio.FlatSound("sounds/special-ready.ogg")
         self.lastSpecialReady = True
         
-        self.damageImage = OnscreenImage(image = "images/tunnel-vision.png", pos = (0, 0, 0), scale = (16.0 / 9.0, 0, 1))
+        self.damageImage = OnscreenImage(image = "images/tunnel-vision.png", pos = (0, 0, 0), scale = (16.0 / 9.0, 1, 1))
         self.damageImage.setTransparency(TransparencyAttrib.MAlpha)
         self.damageImage.hide()
         self.damageImage.setBin("transparent", 0)
@@ -40,13 +40,13 @@ class GameUI(DirectObject):
         self.lastPlayerHealth = 0
         
         self.specialIndicators = []
-        img = OnscreenImage(image = "images/special-slot.png", pos = (engine.aspectRatio - 0.54, 0, 0.8), scale = (0.065, 0, 0.065))
+        img = OnscreenImage(image = "images/special-slot.png", pos = (engine.aspectRatio - 0.54, 0, 0.8), scale = (0.065, 1, 0.065))
         img.setTransparency(TransparencyAttrib.MAlpha)
         self.specialIndicators.append(img)
-        img2 = OnscreenImage(image = "images/special-slot.png", pos = (engine.aspectRatio - 0.39, 0, 0.8), scale = (0.08, 0, 0.08))
+        img2 = OnscreenImage(image = "images/special-slot.png", pos = (engine.aspectRatio - 0.39, 0, 0.8), scale = (0.08, 1, 0.08))
         img2.setTransparency(TransparencyAttrib.MAlpha)
         self.specialIndicators.append(img2)
-        img3 = OnscreenImage(image = "images/special-slot.png", pos = (engine.aspectRatio - 0.24, 0, 0.8), scale = (0.065, 0, 0.065))
+        img3 = OnscreenImage(image = "images/special-slot.png", pos = (engine.aspectRatio - 0.24, 0, 0.8), scale = (0.065, 1, 0.065))
         img3.setTransparency(TransparencyAttrib.MAlpha)
         self.specialIndicators.append(img3)
         
@@ -214,7 +214,7 @@ class GameUI(DirectObject):
                     self.playerUsernames[i].node().setTextColor(team.color.getX() + 0.25, team.color.getY() + 0.25, team.color.getZ() + 0.25, 1)
                     self.playerUsernames[i].node().setText(player.username)
                     self.playerUsernames[i].setPos(player.getPosition() + Vec3(0, 0, player.radius + 0.5))
-                    self.playerUsernames[i].setScale(pow((camera.getPos() - self.playerUsernames[i].getPos()).length(), 0.5) * 0.15)
+                    self.playerUsernames[i].setScale(max(0.0001, pow((camera.getPos() - self.playerUsernames[i].getPos()).length(), 0.5) * 0.15))
                     self.playerUsernames[i].show()
                 else:
                     self.playerUsernames[i].hide()
@@ -243,7 +243,7 @@ class GameUI(DirectObject):
             self.healthBars[i].setPos(actor.getPosition() + Vec3(0, 0, actor.radius + 1))
             self.healthBars[i].setValue(actor.health, actor.maxHealth)
             self.healthBars[i].setColor(actor.getTeam().color)
-            self.healthBars[i].setScale((camera.getPos() - self.healthBars[i].getPos()).length() * 0.07)
+            self.healthBars[i].setScale(max(0.0001, (camera.getPos() - self.healthBars[i].getPos()).length() * 0.07))
             
         i = 0
         for t in self.teams:
@@ -820,10 +820,10 @@ class StatusBar(DirectObject):
         self.background.show()
 
     def setValue(self, value, range = None):
-        self.value = value
+        self.value = max(0.0001, value)
         if range != None:
             self.range = float(range)
-        self.bar.setScale(1, 1, max(min(float(self.value) / self.range, 1), 0))
+        self.bar.setScale(1, 1, max(min(float(self.value) / self.range, 1), 1))
     
     def delete(self):
         self.bar.removeNode()
@@ -882,7 +882,7 @@ class StatusBar3D(NodePath):
         if range != None:
             self.range = float(range)
         self.value = float(value)
-        scale = self.value / self.range
+        scale = max(0.0001, self.value / self.range)
         self.fg.setScale(scale, 1, 1)
         self.bg.setScale(1.0 - scale, 1, 1)
 
@@ -1026,7 +1026,7 @@ class HostList(DirectObject):
         self.refreshButton = DirectButton(parent = self.dialog, text = "Refresh", pos = (0.65, 0, -0.8), relief = DGG.FLAT, text_font = visitorFont, frameColor = (0, 0, 0, 0.5), frameSize = (-0.6, 0.6, -.15, .15), text_fg = (1, 1, 1, 1), text_scale = 0.3, text_pos = (0, -0.04), scale = 0.3, rolloverSound = None, clickSound = None, command = online.getHosts)
         self.joinButton = DirectButton(parent = self.dialog, text = "Join", pos = (0.4, 0, -0.68), relief = DGG.FLAT, text_font = visitorFont, frameColor = (0, 0, 0, 0.5), frameSize = (-0.4, 0.4, -.14, .14), text_fg = (1, 1, 1, 1), text_scale = 0.3, text_pos = (0, -0.04), scale = 0.3, rolloverSound = None, clickSound = None, command = self.go)
         self.serverList = DirectScrolledFrame(parent = self.dialog, pos = (0, 0, 0.1), canvasSize = (-.8, .8, 0, 0), frameSize = (-.85, .85, -0.7, 0.7), frameColor = (0, 0, 0, 0.5), autoHideScrollBars = True, manageScrollBars = True, scrollBarWidth = 0.04, verticalScroll_relief = DGG.FLAT, verticalScroll_frameColor = (1, 1, 1, 0.2), verticalScroll_pageSize = 0.4, verticalScroll_scrollSize = 0.2, verticalScroll_thumb_rolloverSound = None, verticalScroll_thumb_clickSound = None, verticalScroll_incButton_rolloverSound = None, verticalScroll_incButton_clickSound = None, verticalScroll_decButton_rolloverSound = None, verticalScroll_decButton_clickSound = None, verticalScroll_thumb_image = "images/checkbox-disabled.jpg", verticalScroll_thumb_frameColor = (0, 0, 0, 0), verticalScroll_thumb_scale = 0.04, verticalScroll_thumb_image_scale = 0.04, verticalScroll_incButton_image = "images/checkbox-disabled.jpg", verticalScroll_incButton_frameColor = (0, 0, 0, 0), verticalScroll_incButton_scale = 0.04, verticalScroll_incButton_image_scale = 0.04, verticalScroll_decButton_image = "images/checkbox-disabled.jpg", verticalScroll_decButton_frameColor = (0, 0, 0, 0), verticalScroll_decButton_scale = 0.04, verticalScroll_decButton_image_scale = 0.04)
-        self.dialog.setScale(0.0)
+        self.dialog.setScale(0.001)
         self.dialog.hide()
         self.hostButtons = []
         net.context.hostListCallback = self.showHosts
@@ -1047,14 +1047,14 @@ class HostList(DirectObject):
         if self.lastShow != -1:
             elapsedTime = engine.clock.time - self.lastShow
             if elapsedTime < self.transitionTime:
-                self.dialog.setScale(elapsedTime / self.transitionTime)
+                self.dialog.setScale(max(0.0001, elapsedTime / self.transitionTime))
             else:
                 self.lastShow = -1
                 self.dialog.setScale(1.0)
         if self.lastHide != -1:
             elapsedTime = engine.clock.time - self.lastHide
             if elapsedTime < self.transitionTime:
-                self.dialog.setScale(1 - (elapsedTime / self.transitionTime))
+                self.dialog.setScale(max(0.0001, 1 - (elapsedTime / self.transitionTime)))
             else:
                 self.lastHide = -1
                 self.dialog.hide()
@@ -1121,7 +1121,7 @@ class LoginDialog(DirectObject):
         self.label = OnscreenText(parent = self.dialog, text = "Enter a username", pos = (0, .07), font = visitorFont, fg = (1, 1, 1, 1), scale = 0.1)
         self.usernameEntry = DirectEntry(parent = self.dialog, pos = (-0.6, 0, -0.06), scale = .08, entryFont = dejavuFont, text_fg = Vec4(1, 1, 1, 1), frameColor = (0, 0, 0, 0.5), initialText = engine.savedUsername, numLines = 1, rolloverSound = None, clickSound = None, focus = 1, command = self.go)
         self.loginButton = DirectButton(parent = self.dialog, text = "Login", pos = (0.4, 0, -.03), relief = DGG.FLAT, text_font = visitorFont, frameColor = (0, 0, 0, 0.5), frameSize = (-0.4, 0.4, -.14, .14), text_fg = (1, 1, 1, 1), text_scale = 0.3, text_pos = (0, -0.04), scale = 0.475, rolloverSound = None, clickSound = None, command = self.go)
-        self.dialog.setScale(0.0)
+        self.dialog.setScale(0.001)
         self.dialog.hide()
         self.lastShow = -1
         self.lastHide = -1
@@ -1131,14 +1131,14 @@ class LoginDialog(DirectObject):
         if self.lastShow != -1:
             elapsedTime = engine.clock.time - self.lastShow
             if elapsedTime < self.transitionTime:
-                self.dialog.setScale(elapsedTime / self.transitionTime)
+                self.dialog.setScale(max(0.001, elapsedTime / self.transitionTime))
             else:
                 self.lastShow = -1
                 self.dialog.setScale(1.0)
         if self.lastHide != -1:
             elapsedTime = engine.clock.time - self.lastHide
             if elapsedTime < self.transitionTime:
-                self.dialog.setScale(1 - (elapsedTime / self.transitionTime))
+                self.dialog.setScale(max(0.01, 1 - (elapsedTime / self.transitionTime)))
             else:
                 self.lastHide = -1
                 self.dialog.hide()
@@ -1175,7 +1175,7 @@ class MapList(DirectObject):
         self.background.setColor(1, 1, 1, 0.8)
         self.label = OnscreenText(parent = self.dialog, text = "Choose map", pos = (0, .825), font = visitorFont, fg = (1, 1, 1, 1), scale = 0.1)
         self.cancelButton = DirectButton(parent = self.dialog, text = "Cancel", pos = (0, 0, -0.8), relief = DGG.FLAT, text_font = visitorFont, frameColor = (0, 0, 0, 0.5), frameSize = (-0.5, 0.5, -.15, .15), text_fg = (1, 1, 1, 1), text_scale = 0.3, text_pos = (0, -0.04), scale = 0.3, rolloverSound = None, clickSound = None, command = self.hide)
-        self.dialog.setScale(0.0)
+        self.dialog.setScale(0.001)
         self.dialog.hide()
         self.mapButtons = []
         hover = None
@@ -1207,14 +1207,14 @@ class MapList(DirectObject):
         if self.lastShow != -1:
             elapsedTime = engine.clock.time - self.lastShow
             if elapsedTime < self.transitionTime:
-                self.dialog.setScale(elapsedTime /self.transitionTime)
+                self.dialog.setScale(max(0.0001, elapsedTime /self.transitionTime))
             else:
                 self.lastShow = -1
                 self.dialog.setScale(1.0)
         if self.lastHide != -1:
             elapsedTime = engine.clock.time - self.lastHide
             if elapsedTime < self.transitionTime:
-                self.dialog.setScale(1 - (elapsedTime / self.transitionTime))
+                self.dialog.setScale(max(0.0001, 1 - (elapsedTime / self.transitionTime)))
             else:
                 self.lastHide = -1
                 self.dialog.hide()

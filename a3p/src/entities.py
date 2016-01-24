@@ -978,7 +978,18 @@ class Molotov(ObjectEntity):
     
     def setTeam(self, team):
         self.team = team
-
+        
+    def getTeam(self):
+        if self.team == None:
+            team = entityGroup.getEntity(self.teamId)
+            if team != None:
+                self.setTeam(team)
+                return self.team
+            else:
+                return TeamEntity.default
+        else:
+            return self.team
+            
 class GraphicsObject(DirectObject):
     def __init__(self):
         self.active = True

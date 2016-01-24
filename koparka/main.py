@@ -138,7 +138,7 @@ class Editor (DirectObject):
         self.ignoreHover=False
         self.collision_mesh=None
         self.winsize=[0,0]
-        self.object_mode=OBJECT_MODE_ONE
+        self.object_mode=OBJECT_MODE_MULTI
         self.hpr_axis='H: '
         self.last_model_path=''
         self.lastUpdateTime=0.0

@@ -450,24 +450,28 @@ class SmallFloat(Object):
         return float(iterator.getInt8()) * (35.0 / 127.0)
 class Uint8(Object):
     def addTo(self, datagram):
+        self.data=int(self.data)
         datagram.addUint8(self.data)
     @staticmethod
     def getFrom(iterator):
         return iterator.getUint8()
 class Uint16(Object):
     def addTo(self, datagram):
+        self.data=int(self.data)
         datagram.addUint16(self.data)
     @staticmethod
     def getFrom(iterator):
         return iterator.getUint16()
 class Uint32(Object):
     def addTo(self, datagram):
+        self.data=int(self.data)
         datagram.addUint32(self.data)
     @staticmethod
     def getFrom(iterator):
         return iterator.getUint32()
 class Int16(Object):
     def addTo(self, datagram):
+        self.data=int(self.data)
         datagram.addInt16(self.data)
     @staticmethod
     def getFrom(iterator):
