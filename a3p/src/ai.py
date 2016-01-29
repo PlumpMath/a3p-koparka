@@ -1,7 +1,7 @@
 from direct.showbase.DirectObject import DirectObject
 from panda3d.core import *
-from panda3d.ode import *
-#from panda3d.bullet import *
+#from panda3d.ode import *
+from panda3d.bullet import *
 from random import randint, random, choice
 import math
 import sys
@@ -69,39 +69,40 @@ class World:
             self.traverser.clearColliders()
         
         # Setup the Bullet world
-        #self.worldNP = render.attachNewNode('World')
-        #self.world = BulletWorld()
-        #self.world.setGravity(Vec3(0, 0,  -35.0))
-    
-        # Setup the physics world
-        self.world = OdeWorld()
-        # Create a space and add a contactgroup to it to add the contact joints
-        self.space = OdeHashSpace()
-        self.space.setAutoCollideWorld(self.world)
-        self.contactGroup = OdeJointGroup()
-        self.space.setAutoCollideJointGroup(self.contactGroup)
-        self.space.setCollisionEvent("physicsCollision")
+        self.worldNP = render.attachNewNode('World')
+        self.world = BulletWorld()
+        self.world.setGravity(Vec3(0, 0,  -35.0)) #why not -9.81 ?
+
         
-        self.world.setGravity(0, 0, -35)
+        # Setup the physics world
+        #self.world = OdeWorld()
+        # Create a space and add a contactgroup to it to add the contact joints
+        #self.space = OdeHashSpace()
+        #self.space.setAutoCollideWorld(self.world)
+        #self.contactGroup = OdeJointGroup()
+        #self.space.setAutoCollideJointGroup(self.contactGroup)
+        #self.space.setCollisionEvent("physicsCollision")
+        
+        #self.world.setGravity(0, 0, -35)
 
         # Surface IDs: 0 - ground 1 - objects 2 - actors
-        self.world.initSurfaceTable(3)
-        self.world.setSurfaceEntry(0, 1, 1.0, 0.3, 7, 0.9, 0.00001, 0.0, 0.01)
-        self.world.setSurfaceEntry(1, 1, 1.0, 0.3, 7, 0.9, 0.00001, 0.0, 0.01)
-        self.world.setSurfaceEntry(1, 2, 1.0, 0.3, 7, 0.9, 0.00001, 0.0, 0.01)
-        self.world.setSurfaceEntry(0, 2, 10.0, 0.3, 7, 0.9, 0.00001, 0.0, 0.01)
-        self.world.setSurfaceEntry(2, 2, 0.2, 0.3, 7, 0.9, 0.00001, 0.0, 0.01)
-        self.world.setSurfaceEntry(0, 0, 1.0, 0.3, 7, 0.9, 0.00001, 0.0, 0.01)
+        #self.world.initSurfaceTable(3)
+        #self.world.setSurfaceEntry(0, 1, 1.0, 0.3, 7, 0.9, 0.00001, 0.0, 0.01)
+        #self.world.setSurfaceEntry(1, 1, 1.0, 0.3, 7, 0.9, 0.00001, 0.0, 0.01)
+        #self.world.setSurfaceEntry(1, 2, 1.0, 0.3, 7, 0.9, 0.00001, 0.0, 0.01)
+        #self.world.setSurfaceEntry(0, 2, 10.0, 0.3, 7, 0.9, 0.00001, 0.0, 0.01)
+        #self.world.setSurfaceEntry(2, 2, 0.2, 0.3, 7, 0.9, 0.00001, 0.0, 0.01)
+        #self.world.setSurfaceEntry(0, 0, 1.0, 0.3, 7, 0.9, 0.00001, 0.0, 0.01)
     
     def update(self):
         "Steps the Bullet simulation."
         #dt = globalClock.getDt() #not sure what's wrong with the default way p3d tracks time...?
-        #dt=engine.clock.timeStep
-        #self.world.doPhysics(dt, 5, 1.0/180.0)
+        dt=engine.clock.timeStep
+        self.world.doPhysics(dt, 5, 1.0/180.0)
         
-        self.space.autoCollide()
-        self.world.quickStep(engine.clock.timeStep)
-        self.contactGroup.empty() # Clear the contact joints
+        #self.space.autoCollide()
+        #self.world.quickStep(engine.clock.timeStep)
+        #self.contactGroup.empty() # Clear the contact joints
     
     def getNearestDroid(self, entityGroup, pos):
         "Gets an entity on any opposing team with the smallest straight-line distance from the specified position."
@@ -277,8 +278,9 @@ class World:
         del self.docks[:]
         if self.navMesh != None:
             self.navMesh.delete()
-        self.world.destroy()
-        self.space.destroy()
+        #self.world.remove()    
+        #self.world.destroy()
+        #self.space.destroy()
 
 navMeshCache = dict()
 class NavMesh:

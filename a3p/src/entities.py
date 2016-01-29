@@ -1,6 +1,7 @@
 from direct.showbase.DirectObject import DirectObject
 from panda3d.core import *
-from panda3d.ode import *
+#from panda3d.ode import *
+from panda3d.bullet import *
 from random import random, uniform
 import math
 import engine
@@ -55,14 +56,20 @@ class EntityGroup(DirectObject):
 
     def getEntityFromEntry(self, entry):
         "Gets the ObjectEntity specified by the given collision entry, if one exists."
+        entity=None
         if entry != None:
-            entity = self.getEntity(entry.getIntoNodePath().getParent().getName())
-            if entity == None:
-                return self.getEntity(entry.getIntoNodePath().getName())
-            else:
-                return entity
-        else:
-            return None
+            if entry.hasPythonTag('entity'):
+                entity=entry.getPythonTag('entity')
+        return entity
+            
+        #if entry != None:
+        #    entity = self.getEntity(entry.getIntoNodePath().getParent().getName())
+        #    if entity == None:
+        #        return self.getEntity(entry.getIntoNodePath().getName())
+        #    else:
+        #        return entity
+        #else:
+        #    return None
     
     def spawnEntity(self, entity):
         "Spawning an ObjectEntity involves sending off a network packet so everyone else has the ObjectEntity too."
@@ -257,50 +264,50 @@ class ObjectEntity(Entity):
             self.node.setName(str(int(id)))
     
     def getPosition(self):
-        return self.body.getPosition()
+        return self.body.getPos()
     
     def setPosition(self, pos):
         self.node.setPos(pos)
-        self.body.setPosition(pos)
+        self.body.setPos(pos)
     
     def setRotation(self, hpr):
         self.node.setHpr(hpr)
-        self.body.setQuaternion(self.node.getQuat(render))
+        self.body.setQuat(self.node.getQuat(render))
     
     def getRotation(self):
         return self.node.getHpr()
     
     def setLinearVelocity(self, vel):
-        self.body.setLinearVel(vel)
+        self.body.node().setLinearVelocity(vel)
     
     def getLinearVelocity(self):
-        return self.body.getLinearVel()
+        return self.body.node().getLinearVelocity()
     
     def setAngularVelocity(self, vel):
-        self.body.setAngularVel(vel)
+        self.body.node().setAngularVelocity(vel)
     
     def getAngularVelocity(self):
-        return self.body.getAngularVel()
+        return self.body.node().getAngularVelocity()
     
     def setQuaternion(self, quat):
-        self.body.setQuaternion(quat)
+        self.body.setQuat(quat)
         self.node.setQuat(quat)
     
     def getQuaternion(self):
-        return self.body.getQuaternion()
+        return self.body.getQuat()
     
     def addTorque(self, torque):
-        self.body.addTorque(torque.getX(), torque.getY(), torque.getZ())
+        self.body.node().applyTorque(torque)
     
     def addForce(self, force):
-        self.body.addForce(force)
+        self.body.node().applyForce(force)
     
     def addForceAtPosition(self, direction, position):
         self.body.addForceAtPos(direction.getX(), direction.getY(), direction.getZ(), position.getX(), position.getY(), position.getZ())
 
     def commitChanges(self):
         "Updates the visual orientation and position of this ObjectEntity to reflect that of the ODE body."
-        self.node.setPosQuat(engine.renderObjects, self.getPosition(), Quat(self.body.getQuaternion()))
+        self.node.setPosQuat(engine.renderObjects, self.getPosition(), Quat(self.body.getQuat()))
     
     def damage(self, entity, damage, ranged = True):
         "Useful for Entities that have health."
@@ -315,12 +322,15 @@ class ObjectEntity(Entity):
     def clear(self, entityGroup):
         """Clears all resources associated with this ObjectEntity."""
         Entity.clear(self, entityGroup)
-        self.geometry.destroy()
-        self.body.destroy()
+        try:
+            self.geometry.destroy()
+            self.body.destroy()
+        except:
+            pass    
         engine.deleteModel(self.node, self.filename)
 
 class DropPod(ObjectEntity):
-    def __init__(self, world, space, local = net.netMode == net.MODE_SERVER):
+    def __init__(self, world, worldNP, local = net.netMode == net.MODE_SERVER):
         ObjectEntity.__init__(self, "models/pod/pod", controllers.DropPodController(), True)
         self.collisionNode = CollisionNode("cnode")
         self.collisionNodePath = self.node.attachNewNode(self.collisionNode)
@@ -336,17 +346,24 @@ class DropPod(ObjectEntity):
         self.radius = 3.5
         self.vradius = 3.5
         self.collisionNode.addSolid(CollisionSphere(0, 0, 0, self.radius))
-        self.geometry = OdeSphereGeom(space, self.radius)
-        self.geometry.setCollideBits(BitMask32(0x00000001))
-        self.geometry.setCategoryBits(BitMask32(0x00000001))
-        self.body = OdeBody(world)
-        M = OdeMass()
-        M.setSphere(2, self.radius)
-        self.body.setMass(M)
-        self.geometry.setBody(self.body)
+        
+        shape = BulletSphereShape(self.radius)
+        self.body = worldNP.attachNewNode(BulletRigidBodyNode('DropPod'))
+        self.body.node().setMass(2.0)
+        self.body.node().addShape(shape)        
+        world.attachRigidBody(self.body.node())
+        
+        #self.geometry = OdeSphereGeom(space, self.radius)
+        #self.geometry.setCollideBits(BitMask32(0x00000001))
+        #self.geometry.setCategoryBits(BitMask32(0x00000001))
+        #self.body = OdeBody(world)
+        #M = OdeMass()
+        #M.setSphere(2, self.radius)
+        #self.body.setMass(M)
+        #self.geometry.setBody(self.body)
         avel = 5
         self.setAngularVelocity(Vec3(uniform(-avel, avel), uniform(-avel, avel), uniform(-avel, avel)))
-        space.setSurfaceType(self.geometry, 1)
+        #space.setSurfaceType(self.geometry, 1)
         visitorFont = loader.loadFont("menu/visitor2.ttf")
         self.amountIndicator = TextNode("dropPodAmountIndicator")
         self.amountIndicator.setText("")
@@ -407,7 +424,7 @@ class Fragment(ObjectEntity):
 class GlassFragment(Fragment):
     def __init__(self, world, space, pos, velocity):
         ObjectEntity.__init__(self, "models/fragment/GlassFragment", controllers.FragmentController(velocity), True)
-        self.node.setTransparency(TransparencyAttrib.MAlpha)
+        self.node.setTransparency(TransparencyAttrib.MDual)
         self.node.hide(BitMask32.bit(4)) # Don't cast shadows
         self.radius = 0.3
         size = self.radius * 2
@@ -426,11 +443,12 @@ class GlassFragment(Fragment):
         space.setSurfaceType(self.geometry, 2)
 
 class Glass(ObjectEntity):
-    def __init__(self, world, space):
+    def __init__(self, world, worldNP):
         ObjectEntity.__init__(self, "models/fragment/GlassFragment", controllers.GlassController())
-        self.body = OdeBody(world)
+        self.body =worldNP.attachNewNode(BulletRigidBodyNode('Glass'))
+        #self.body = OdeBody(world)
         
-    def initGlass(self, world, space, width, height):
+    def initGlass(self, world, worldNP, width, height):
         engine.deleteModel(self.node, "models/fragment/GlassFragment")
         maker = CardMaker("glassNode")
         maker.setFrame(-width / 2.0, width / 2.0, -height / 2.0, height / 2.0)
@@ -438,7 +456,7 @@ class Glass(ObjectEntity):
         self.node = hidden.attachNewNode(maker.generate())
         self.node.setTexture(loader.loadTexture("models/fragment/glass.png"))
         self.node.setTwoSided(True)
-        self.node.setTransparency(TransparencyAttrib.MAlpha)
+        self.node.setTransparency(TransparencyAttrib.MDual)
         self.node.setName(str(int(self.id)))
         self.node.hide(BitMask32.bit(4)) # Don't cast shadows
         self.radius = width / 2.0
@@ -451,10 +469,17 @@ class Glass(ObjectEntity):
         self.collisionNode.addSolid(CollisionPolygon(point4, point3, point2, point1))
         self.collisionNode.addSolid(CollisionPolygon(point1, point2, point3, point4))
         self.collisionNodePath = self.node.attachNewNode(self.collisionNode)
-        self.geometry = OdeBoxGeom(space, width, 0.5, height)
-        self.geometry.setCollideBits(BitMask32(0x00000001))
-        self.geometry.setCategoryBits(BitMask32(0x00000001))
-        space.setSurfaceType(self.geometry, 1)
+        
+        shape = BulletBoxShape(Vec3(width*0.5, 0.25, height*0.5))#??
+        self.geometry = worldNP.attachNewNode(BulletRigidBodyNode('Box'))
+        self.geometry.node().addShape(shape)
+        world.attachRigidBody(self.geometry.node())
+        
+        #self.geometry = OdeBoxGeom(space, width, 0.5, height)
+        #self.geometry.setCollideBits(BitMask32(0x00000001))
+        #self.geometry.setCategoryBits(BitMask32(0x00000001))
+        #space.setSurfaceType(self.geometry, 1)
+        
         self.shattered = False
         self.glassWidth = width
         self.glassHeight = height
@@ -490,20 +515,20 @@ class Glass(ObjectEntity):
 
 class PhysicsEntity(ObjectEntity):
     "A PhysicsEntity is a large non-character physics object that is included in AI path calculations."
-    def __init__(self, world, space, data = None, directory = None, file = None):
+    def __init__(self, world, worldNP, data = None, directory = None, file = None):
         ObjectEntity.__init__(self, None, controllers.PhysicsEntityController())
         self.geometries = []
         self.geometry = None
         self.vradius = 0
         if data != None:
-            self.loadDataFile(world, space, data, directory, file)
+            self.loadDataFile(world, worldNP, data, directory, file)
 
-    def loadDataFile(self, world, space, data, directory, file):
+    def loadDataFile(self, world, worldNP, data, directory, file):
         self.directory = directory
         self.dataFile = file
         lines = data.split("\n")
         i = 0
-        self.body = OdeBody(world)
+        self.body = worldNP.attachNewNode(BulletRigidBodyNode('geom'))
         while i < len(lines):
             tokens = lines[i].split()
             if tokens[0] == "model" and self.node == None:
@@ -528,7 +553,8 @@ class PhysicsEntity(ObjectEntity):
                     self.radius = max(self.radius, math.fabs(point1.getX()), math.fabs(point1.getY()), math.fabs(point2.getX()), math.fabs(point2.getY()))
                     self.vradius = max(self.vradius, math.fabs(point1.getZ()), math.fabs(point2.getZ()))
                     self.collisionNode.addSolid(CollisionBox(point1, point2))
-                    geom = OdeBoxGeom(space, sizex, sizey, sizez)
+                    geom = BulletBoxShape(Vec3(sizex, sizey, sizez)*0.5)
+                    #geom = OdeBoxGeom(space, sizex, sizey, sizez)
                 elif tokens[1] == "sphere":
                     radius = float(tokens[2])
                     if len(tokens) == 6:
@@ -536,7 +562,8 @@ class PhysicsEntity(ObjectEntity):
                         offsety = float(tokens[4])
                         offsetz = float(tokens[5])
                     self.collisionNode.addSolid(CollisionSphere(offsetx, offsety, offsetz, radius))
-                    geom = OdeSphereGeom(space, radius)
+                    geom = BulletSphereShape(radius)
+                    #geom = OdeSphereGeom(space, radius)
                     self.radius = max(self.radius, radius + max(math.fabs(offsetx), math.fabs(offsety)))
                     self.vradius = max(self.vradius, radius + math.fabs(offsetz))
                 elif tokens[1] == "cylinder":
@@ -551,27 +578,32 @@ class PhysicsEntity(ObjectEntity):
                     self.radius = max(self.radius, radius + max(math.fabs(offsetx), math.fabs(offsety)))
                     self.vradius = max(self.vradius, length / 2.0 + math.fabs(offsetz))
                     self.collisionNode.addSolid(CollisionBox(point1, point2))
-                    geom = OdeCylinderGeom(space, radius, length)
-                geom.setCollideBits(BitMask32(0x00000001))
-                geom.setCategoryBits(BitMask32(0x00000001))
-                geom.setBody(self.body)
-                geom.setOffsetPosition(offsetx, offsety, offsetz)
-                space.setSurfaceType(geom, 1)
+                    geom=BulletCylinderShape(radius, length, 2)# BulletUpAxis.Z_up == 2
+                    #geom = OdeCylinderGeom(space, radius, length)
+                #geom.setCollideBits(BitMask32(0x00000001))
+                #geom.setCategoryBits(BitMask32(0x00000001))
+                #geom.setBody(self.body)
+                #geom.setOffsetPosition(offsetx, offsety, offsetz)
+                #space.setSurfaceType(geom, 1)               
+                if geom:
+                    self.body.node().addShape(shape)
                 if self.geometry == None:
-                    self.geometry = geom
+                    self.geometry = geom #???
                 else:
                     self.geometries.append(geom)
             elif tokens[0] == "mass":
                 # Process the mass
-                m = OdeMass()
-                density = float(tokens[1])
-                if tokens[2] == "box":
-                    m.setBox(density, float(tokens[3]), float(tokens[4]), float(tokens[5]))
-                elif tokens[2] == "sphere":
-                    m.setSphere(density, float(tokens[3]))
-                elif tokens[2] == "cylinder":
-                    m.setCylinder(density, 3, float(tokens[3]), float(tokens[4])) # 1 = X axis, 2 = Y axis, 3 = Z axis
-                self.body.setMass(m)
+                #m = OdeMass()
+                m = float(tokens[1])
+                self.body.node().setMass(m)
+                
+                #if tokens[2] == "box":
+                #    m.setBox(density, float(tokens[3]), float(tokens[4]), float(tokens[5]))
+                #elif tokens[2] == "sphere":
+                #    m.setSphere(density, float(tokens[3]))
+                #elif tokens[2] == "cylinder":
+                #    m.setCylinder(density, 3, float(tokens[3]), float(tokens[4])) # 1 = X axis, 2 = Y axis, 3 = Z axis
+                #self.body.setMass(m)
             i += 1
     
     def clear(self, entityGroup):
@@ -696,7 +728,7 @@ class TeamEntity(Entity):
 class Actor(ObjectEntity):
     """An Actor is an ObjectEntity controlled by either a player or an AI controller.
     Actors can contain components, such as guns, engines, shields, etc."""
-    def __init__(self, world, space, filename, controller, local = net.netMode == net.MODE_SERVER):
+    def __init__(self, world, worldNP, filename, controller, local = net.netMode == net.MODE_SERVER):
         self.team = None
         self.teamId = 0
         self.health = 100
@@ -780,27 +812,36 @@ class Actor(ObjectEntity):
 
 class BasicDroid(Actor):
     "BasicDroid is the base for basically all the units in the game. Basically."
-    def __init__(self, world, space, controller, local = net.netMode == net.MODE_SERVER):
-        Actor.__init__(self, world, space, "models/basicdroid/BasicDroid", controller, local)
+    def __init__(self, world, worldNP, controller, local = net.netMode == net.MODE_SERVER):
+        Actor.__init__(self, world, worldNP, "models/basicdroid/BasicDroid", controller, local)
         self.radius = 1
         self.collisionNode = CollisionNode("cnode")
         self.collisionNodePath = self.node.attachNewNode(self.collisionNode)
         self.collisionNode.addSolid(CollisionSphere(0, 0, 0, self.radius + 0.05))
         self.node.hide(BitMask32.bit(4)) # Don't cast shadows
-        self.node.setTransparency(TransparencyAttrib.MAlpha) # For when we're cloaked
+        self.node.setTransparency(TransparencyAttrib.MDual) # For when we're cloaked
         self.lowResNode = engine.loadModel("models/basicdroid/BasicDroid-lowres")
         self.lowResNode.reparentTo(self.node)
         self.lowResNode.hide(BitMask32.bit(1))
         self.lowResNode.showThrough(BitMask32.bit(4)) # Low-res shadow caster
-        self.body = OdeBody(world)
-        M = OdeMass()
-        M.setSphere(15, self.radius)
-        self.body.setMass(M)
-        self.geometry = OdeSphereGeom(space, self.radius)
-        self.geometry.setCollideBits(BitMask32(0x00000001))
-        self.geometry.setCategoryBits(BitMask32(0x00000001))
-        self.geometry.setBody(self.body)
-        space.setSurfaceType(self.geometry, 2)
+        
+        self.geometry = BulletSphereShape(self.radius)
+        self.body = worldNP.attachNewNode(BulletRigidBodyNode('BasicDroid'))
+        self.body.node().setMass(15.0)
+        self.body.node().addShape(self.geometry)
+        world.attachRigidBody(self.body.node())
+        
+        
+        #self.body = OdeBody(world)
+        #M = OdeMass()
+        #M.setSphere(15, self.radius)
+        #self.body.setMass(M)
+        #self.geometry = OdeSphereGeom(space, self.radius)
+        #self.geometry.setCollideBits(BitMask32(0x00000001))
+        #self.geometry.setCategoryBits(BitMask32(0x00000001))
+        #self.geometry.setBody(self.body)
+        #space.setSurfaceType(self.geometry, 2)
+        
         self.cloaked = False
         self.shielded = False
         self.crosshairNode = engine.loadModel("models/crosshair/crosshair")
@@ -815,7 +856,7 @@ class BasicDroid(Actor):
         self.shieldNode.setTwoSided(True)
         self.shieldNode.setColor(1.0, 0.9, 0.8, 0.6)
         self.shieldNode.setShaderOff(True)
-        self.shieldNode.setTransparency(TransparencyAttrib.MAlpha)
+        self.shieldNode.setTransparency(TransparencyAttrib.MDual)
         self.shieldNode.hide()
         self.shieldNode.hide(BitMask32.bit(4)) # Don't cast shadows
         self.initialSpawnShieldEnabled = True
@@ -878,8 +919,8 @@ class BasicDroid(Actor):
         engine.deleteModel(self.shieldNode, "models/shield/shield")
 
 class PlayerDroid(BasicDroid):
-    def __init__(self, world, space, controller, local = net.netMode == net.MODE_SERVER):
-        BasicDroid.__init__(self, world, space, controller, local)
+    def __init__(self, world, worldNP, controller, local = net.netMode == net.MODE_SERVER):
+        BasicDroid.__init__(self, world, worldNP, controller, local)
         self.username = "Unnamed"
         self.scoreMultiplier = 2.0
     
@@ -896,23 +937,32 @@ class PlayerDroid(BasicDroid):
 
 class Grenade(ObjectEntity):
     "Grenades trigger an explosion animation when damaged. Most of the action happens in the GrenadeController."
-    def __init__(self, world, space):
+    def __init__(self, world, worldNP):
         self.team = None
         self.teamId = 0
         ObjectEntity.__init__(self, "models/grenade/Grenade", controllers.GrenadeController())
         self.collisionNode = CollisionNode("cnode")
         self.collisionNodePath = self.node.attachNewNode(self.collisionNode)
         self.collisionNode.addSolid(CollisionSphere(0, 0, 0, 0.4))
-        self.body = OdeBody(world)
-        M = OdeMass()
         self.radius = 0.2
-        M.setSphere(500, 0.2)
-        self.body.setMass(M)
-        self.geometry = OdeSphereGeom(space, 0.2)
-        self.geometry.setCollideBits(BitMask32(0x00000001))
-        self.geometry.setCategoryBits(BitMask32(0x00000001))
-        self.geometry.setBody(self.body)
-        space.setSurfaceType(self.geometry, 2)
+        self.geometry = BulletSphereShape(self.radius)
+        self.body = worldNP.attachNewNode(BulletRigidBodyNode('Grenade'))
+        self.body.node().setMass(500)#?
+        self.body.node().addShape(self.geometry)
+        self.body.setPos(3, 0, 4)    
+        world.attachRigidBody(self.body.node())
+    
+        #self.body = OdeBody(world)
+        #M = OdeMass()
+        #self.radius = 0.2
+        #M.setSphere(500, 0.2)
+        #self.body.setMass(M)
+        #self.geometry = OdeSphereGeom(space, 0.2)
+        #self.geometry.setCollideBits(BitMask32(0x00000001))
+        #self.geometry.setCategoryBits(BitMask32(0x00000001))
+        #self.geometry.setBody(self.body)
+        #space.setSurfaceType(self.geometry, 2)
+        
         self.commitChanges()
         self.grenadeAlive = True
         self.actor = None
@@ -959,16 +1009,23 @@ class Molotov(ObjectEntity):
         self.collisionNode = CollisionNode("cnode")
         self.collisionNodePath = self.node.attachNewNode(self.collisionNode)
         self.collisionNode.addSolid(CollisionSphere(0, 0, 0, 0.4))
-        self.body = OdeBody(world)
-        M = OdeMass()
         self.radius = 0.2
-        M.setSphere(500, 0.2)
-        self.body.setMass(M)
-        self.geometry = OdeSphereGeom(space, 0.2)
-        self.geometry.setCollideBits(BitMask32(0x00000001))
-        self.geometry.setCategoryBits(BitMask32(0x00000001))
-        self.geometry.setBody(self.body)
-        space.setSurfaceType(self.geometry, 2)
+        self.geometry = BulletSphereShape(self.radius)
+        self.body = worldNP.attachNewNode(BulletRigidBodyNode('Grenade'))
+        self.body.node().setMass(500)#?
+        self.body.node().addShape(self.geometry)
+        self.body.setPos(3, 0, 4)    
+        world.attachRigidBody(self.body.node())
+        #self.body = OdeBody(world)
+        #M = OdeMass()
+        #self.radius = 0.2
+        #M.setSphere(500, 0.2)
+        #self.body.setMass(M)
+        #self.geometry = OdeSphereGeom(space, 0.2)
+        #self.geometry.setCollideBits(BitMask32(0x00000001))
+        #self.geometry.setCategoryBits(BitMask32(0x00000001))
+        #self.geometry.setBody(self.body)
+        #space.setSurfaceType(self.geometry, 2)
         self.commitChanges()
         self.grenadeAlive = True
         self.actor = None

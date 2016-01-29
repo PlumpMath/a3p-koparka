@@ -225,7 +225,7 @@ class TeamEntityController(Controller):
                 isPlatformSpawn = purchase[5] != None
                 if isPlatformSpawn:
                     pos = purchase[5]
-                u = entities.PlayerDroid(aiWorld.world, aiWorld.space, controller = PlayerController(), local = True)
+                u = entities.PlayerDroid(aiWorld.world, aiWorld.worldNP, controller = PlayerController(), local = True)
                 u.setWeapons([self.entity.getPrimaryWeapon(), self.entity.getSecondaryWeapon()])
                 u.setSpecial(self.entity.getSpecial())
                 u.setUsername(self.entity.getUsername())
@@ -338,7 +338,7 @@ class ObjectController(Controller):
             self.entity.commitChanges()
             snapshot = net2.EntitySnapshot()
             snapshot.takeSnapshot(self.entity)
-            if not packetUpdate or self.isStatic or (self.lastSentSnapshot.almostEquals(snapshot) and self.entity.body.getLinearVel().length() < 0.5):
+            if not packetUpdate or self.isStatic or (self.lastSentSnapshot.almostEquals(snapshot) and self.entity.body.node().getLinearVelocity().length() < 0.5):
                 p.add(net.Boolean(False))
                 self.newPositionData = False
             else:
@@ -635,16 +635,21 @@ class GrenadeController(ObjectController):
             distance = vector.length()
             if distance > 0:
                 vector.normalize()
-                queue = aiWorld.getCollisionQueue(self.lastPosition, vector, engine.renderEnvironment)
-                for i in range(queue.getNumEntries()):
-                    entry = queue.getEntry(i)
-                    collision = entry.getSurfacePoint(render)
-                    v = collision - self.lastPosition
-                    if v.length() < distance:
-                        self.entity.setPosition(collision - (vector * self.entity.radius))
-                        self.entity.commitChanges()
-                        self.trigger()
-                        break
+                result = aiWorld.world.rayTestClosest(self.lastPosition, vector)
+                if result.hasHit():
+                    self.entity.setPosition(result.getHitPos() - (vector * self.entity.radius))
+                    self.entity.commitChanges()
+                    self.trigger()
+                #queue = aiWorld.getCollisionQueue(self.lastPosition, vector, engine.renderEnvironment)
+                #for i in range(queue.getNumEntries()):
+                #    entry = queue.getEntry(i)
+                #    collision = entry.getSurfacePoint(render)
+                #    v = collision - self.lastPosition
+                #    if v.length() < distance:
+                #        self.entity.setPosition(collision - (vector * self.entity.radius))
+                #        self.entity.commitChanges()
+                #        self.trigger()
+                #        break
         
         self.lastPosition = self.entity.getPosition()
     
@@ -655,8 +660,11 @@ class GrenadeController(ObjectController):
             self.entity.kill(aiWorld, entityGroup)
         
         if self.bounceTime == -1:
-            if aiWorld.testCollisions(self.entity.collisionNodePath).getNumEntries() > 0:
+            result = aiWorld.world.contactTest(self.entity.collisionNodePath)
+            if result.getNumContacts() > 0:
                 self.trigger()
+            #if aiWorld.testCollisions(self.entity.collisionNodePath).getNumEntries() > 0:
+            #    self.trigger()
         if (self.bounceTime != -1 and engine.clock.time > self.bounceTime + 0.6) or (engine.clock.time > self.entity.spawnTime + 5) or not self.entity.grenadeAlive:
             self.entity.kill(aiWorld, entityGroup)
         return p
@@ -704,15 +712,20 @@ class MolotovController(ObjectController):
             distance = vector.length()
             if distance > 0:
                 vector.normalize()
-                queue = aiWorld.getCollisionQueue(self.lastPosition, vector, engine.renderEnvironment)
-                for i in range(queue.getNumEntries()):
-                    entry = queue.getEntry(i)
-                    collision = entry.getSurfacePoint(render)
-                    v = collision - self.lastPosition
-                    if v.length() < distance:
-                        self.entity.setPosition(collision - (vector * self.entity.radius))
-                        self.entity.commitChanges()
-                        break
+                result = aiWorld.world.rayTestClosest(self.lastPosition, vector)
+                if result.hasHit():
+                    self.entity.setPosition(result.getHitPos() - (vector * self.entity.radius))
+                    self.entity.commitChanges()
+                    
+                #queue = aiWorld.getCollisionQueue(self.lastPosition, vector, engine.renderEnvironment)
+                #for i in range(queue.getNumEntries()):
+                #    entry = queue.getEntry(i)
+                #    collision = entry.getSurfacePoint(render)
+                #    v = collision - self.lastPosition
+                #    if v.length() < distance:
+                #        self.entity.setPosition(collision - (vector * self.entity.radius))
+                #        self.entity.commitChanges()
+                #        break
         
         self.lastPosition = self.entity.getPosition()
     
@@ -918,16 +931,21 @@ class DroidController(ActorController):
                 distance = vector.length()
                 if distance > self.entity.radius * 0.9:
                     vector.normalize()
-                    queue = aiWorld.getCollisionQueue(self.lastPosition, vector, engine.renderEnvironment)
-                    for i in range(queue.getNumEntries()):
-                        entry = queue.getEntry(i)
-                        collision = entry.getSurfacePoint(render)
-                        v = collision - self.lastPosition
-                        if v.length() < distance:
-                            clipped = True
-                            self.entity.setPosition(collision - (vector * self.entity.radius))
-                            self.entity.commitChanges()
-                            break
+                    result = aiWorld.world.rayTestClosest(self.lastPosition, vector)
+                    if result.hasHit():
+                        self.entity.setPosition(result.getHitPos() - (vector * self.entity.radius))
+                        self.entity.commitChanges()
+                     
+                    #queue = aiWorld.getCollisionQueue(self.lastPosition, vector, engine.renderEnvironment)
+                    #for i in range(queue.getNumEntries()):
+                    #    entry = queue.getEntry(i)
+                    #    collision = entry.getSurfacePoint(render)
+                    #    v = collision - self.lastPosition
+                    #    if v.length() < distance:
+                    #        clipped = True
+                    #        self.entity.setPosition(collision - (vector * self.entity.radius))
+                    #        self.entity.commitChanges()
+                    #        break
             if clipped:
                 self.clipCheckCount += 1
             else:
@@ -1070,7 +1088,10 @@ class PlayerController(DroidController):
         assert isinstance(entity, entities.PlayerDroid)
         DroidController.setEntity(self, entity)
         if entity.isLocal:
-            self.mouse = engine.Mouse()
+            self.mouse = engine.Mouse()            
+            #self.pick_from=0.0
+            #self.pick_to=0.0
+            #this part is using the default panda3d collision system... why???
             self.pickRayNode = CollisionNode("pickRayNode")
             self.pickRayNP = camera.attachNewNode(self.pickRayNode)
             self.pickRay = CollisionRay()
@@ -1168,7 +1189,8 @@ class PlayerController(DroidController):
             self.reload()
             self.keyMap["reload"] = False
         if self.keyMap["jump"]:
-            if engine.clock.time - self.lastJump > 0.25 and aiWorld.testCollisions(self.entity.collisionNodePath).getNumEntries() > 0:
+            result=aiWorld.world.contactTest(self.entity.collisionNodePath)
+            if engine.clock.time - self.lastJump > 0.25 and result.getNumContacts() > 0:
                 self.lastJump = engine.clock.time
                 self.entity.setLinearVelocity(self.entity.getLinearVelocity() + Vec3(0, 0, 16))
         if self.keyMap["switch-weapon"]:
@@ -1241,17 +1263,20 @@ class PlayerController(DroidController):
             self.entity.addTorque(Vec3(engine.impulseToForce(-angularVel.getX() * 20), engine.impulseToForce(-angularVel.getY() * 20), engine.impulseToForce(-angularVel.getZ() * 20)))
 
         if self.isPlatformMode:
+            #self.pick_from=Point3(self.entity.getPosition())
+            #self.pick_to=self.pick_from-Point3(0, -100, 0)
             self.pickRay.setOrigin(Point3(self.entity.getPosition()))
             self.pickRay.setDirection(Vec3(0, -1, 0))
         else:
             camera.setHpr(-math.degrees(self.angleX) + entityGroup.cameraShakeX * 0.5, math.degrees(self.angleY) + entityGroup.cameraShakeY * 0.5, 0)
             cameraPos = render.getRelativeVector(camera, self.cameraOffset)
             camera.setPos(self.entity.getPosition() + cameraPos)
-            self.pickRay.setFromLens(base.camNode, 0, 0)
-        
+            #base.camLens.extrude((0.0), self.pick_from, self.pick_to)
+            self.pickRay.setFromLens(base.camNode, 0, 0)            
         target = None
         if engine.clock.time - self.lastTargetCheck > 0.05:
             self.lastTargetCheck = engine.clock.time
+            # what are we chaecking here for?
             queue = aiWorld.getRayCollisionQueue(self.pickRayNP)
             camDistance = (camera.getPos() - self.entity.getPosition()).length() + self.entity.radius
             for i in range(queue.getNumEntries()):
@@ -1480,7 +1505,8 @@ class AIController(DroidController):
                     vector.normalize()
                     if engine.clock.time - self.lastTargetCheck > 1.0:
                         self.lastTargetCheck = engine.clock.time
-                        self.enemyLastVisible = entityGroup.getEntityFromEntry(aiWorld.getFirstCollision(self.entity.getPosition() + (vector * (self.entity.radius + 0.2)), vector)) == self.nearestEnemy
+                        result=aiWorld.world.rayTestClosest(self.entity.getPosition() + (vector * (self.entity.radius + 0.2)), vector)
+                        self.enemyLastVisible = entityGroup.getEntityFromEntry(result.getNode()) == self.nearestEnemy
                     if self.enemyLastVisible:
                         weapon.burstTimer = engine.clock.time
                         weapon.burstDelayTimer = -1

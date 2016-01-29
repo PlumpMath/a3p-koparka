@@ -193,16 +193,24 @@ class Gun(Weapon):
     def bulletTest(self, aiWorld, entityGroup, origin, direction):
         """Low-level bullet ray test used by most guns.
         Returns the position of the bullet hit, and the ObjectEntity damaged, if any."""
-        queue = aiWorld.getCollisionQueue(origin, direction)
-        for i in range(queue.getNumEntries()):
-            entry = queue.getEntry(i)
-            pos = entry.getSurfacePoint(render)
-            normal = entry.getSurfaceNormal(render)
-            entity = entityGroup.getEntityFromEntry(entry)
-            if entity == self.actor:
-                continue
+        result = aiWorld.world.rayTestClosest(origin, direction)
+        if result.hasHit():
+            entry = result.getNode() #???
+            pos = result.getHitPos()
+            normal = result.getHitNormal()
+            entity = entityGroup.getEntityFromEntry(entry)            
             return (entity, pos, normal, queue)
-        return (None, None, None, None)
+        return (None, None, None, None)    
+        #queue = aiWorld.getCollisionQueue(origin, direction)
+        #for i in range(queue.getNumEntries()):
+        #    entry = queue.getEntry(i)
+        #    pos = entry.getSurfacePoint(render)
+        #    normal = entry.getSurfaceNormal(render)
+        #    entity = entityGroup.getEntityFromEntry(entry)
+        #    if entity == self.actor:
+        #        continue
+        #    return (entity, pos, normal, queue)
+        #return (None, None, None, None)
 
     def serverUpdate(self, aiWorld, entityGroup, packetUpdate):
         p = Weapon.serverUpdate(self, aiWorld, entityGroup, packetUpdate)

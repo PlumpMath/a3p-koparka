@@ -9,7 +9,8 @@ import traceback
 
 from direct.showbase.DirectObject import DirectObject
 from panda3d.core import *
-from panda3d.ode import *
+from panda3d.bullet import *
+#from panda3d.ode import *
 from direct.task import Task
 
 from direct.filter.CommonFilters import CommonFilters
@@ -520,13 +521,13 @@ class Map(DirectObject):
                     reflectionCamera.node().setInitialState(RenderState.make(CullFaceAttrib.makeReverse(), clipPlaneAttrib))
             elif tokens[0] == "geometry":
                 # Setup static geometry
-                geom = StaticGeometry(aiWorld.space, mapDirectory, tokens[1])
+                geom = StaticGeometry(aiWorld.world, aiWorld.worldNP, mapDirectory, tokens[1])
                 geom.setPosition(Vec3(float(tokens[2]), float(tokens[3]), float(tokens[4])))
                 geom.commitChanges()
                 self.addStaticGeometry(geom)
             elif tokens[0] == "geometry-scenery":
                 # Setup static geometry
-                geom = StaticGeometry(aiWorld.space, mapDirectory, tokens[1])
+                geom = StaticGeometry(aiWorld.world, aiWorld.worldNP, mapDirectory, tokens[1])
                 geom.setPosition(Vec3(float(tokens[2]), float(tokens[3]), float(tokens[4])))
                 geom.commitChanges()
                 geom.node.show()
@@ -609,17 +610,21 @@ class Map(DirectObject):
                     lightNode.setTag("type", "spot") # We can look this up later when we go to save, to differentiate between spotlights and directionals
                     self.lights.append(lightNode)
             elif tokens[0] == "dock":
-                dock = Dock(aiWorld.space, int(tokens[1]))
+                dock = Dock(int(tokens[1]))
                 pos = Vec3(float(tokens[2]), float(tokens[3]), float(tokens[4]))
                 dock.setPosition(pos)
                 normal = Vec3(0, 0, 1)
-                queue = aiWorld.getCollisionQueue(Vec3(pos.getX(), pos.getY(), pos.getZ()), Vec3(0, 0, -1))
-                for i in range(queue.getNumEntries()):
-                    entry = queue.getEntry(i)
-                    if entityGroup.getEntityFromEntry(entry) != None:
-                        continue
-                    normal = entry.getSurfaceNormal(render)
-                    break
+                result = aiWorld.world.rayTestClosest(Vec3(pos.getX(), pos.getY(), pos.getZ()), Vec3(0, 0, -1))                
+                if result.hasHit():
+                    normal = result.getHitNormal()
+                    
+                #queue = aiWorld.getCollisionQueue(Vec3(pos.getX(), pos.getY(), pos.getZ()), Vec3(0, 0, -1))
+                #for i in range(queue.getNumEntries()):
+                #    entry = queue.getEntry(i)
+                #    if entityGroup.getEntityFromEntry(entry) != None:
+                #        continue
+                #    normal = entry.getSurfaceNormal(render)
+                #    break
                 dock.setRotation(Vec3(0, math.degrees(-math.atan2(normal.getY(), normal.getZ())), math.degrees(math.atan2(normal.getX(), normal.getZ()))))
                 aiWorld.docks.append(dock)
             elif tokens[0] == "physicsentity":
@@ -635,7 +640,7 @@ class Map(DirectObject):
                     entityGroup.spawnEntity(obj)
             elif tokens[0] == "spawnpoint":
                 # Setup spawn point
-                geom = SpawnPoint(aiWorld.space)
+                geom = SpawnPoint()
                 geom.setPosition(Vec3(float(tokens[1]), float(tokens[2]), float(tokens[3])))
                 geom.setRotation(Vec3(float(tokens[4]), float(tokens[5]), float(tokens[6])))
                 aiWorld.spawnPoints.append(geom)
@@ -646,12 +651,17 @@ class Map(DirectObject):
                 self.sceneries[tokens[1]] = scenery
         
         # Create winnar platforms
-        entry = aiWorld.getFirstCollision(Vec3(0, 0, 100), Vec3(0, 0, -1))
-        height = 15
-        if entry != None:
-            height = entry.getSurfacePoint(render).getZ() + 10.0
+        result = aiWorld.world.rayTestClosest(Vec3(0, 0, 100), Vec3(0, 0, -1))
+        if result.hasHit():        
+            height=result.getHitPos().getZ()+ 10.0
+        else:
+            height = 15
+        #entry = aiWorld.getFirstCollision(Vec3(0, 0, 100), Vec3(0, 0, -1))
+        #height = 15
+        #if entry != None:
+        #    height = entry.getSurfacePoint(render).getZ() + 10.0
         for i in range(numTeams):
-            p = Platform(aiWorld.space)
+            p = Platform(aiWorld.world,aiWorld.worldNP)
             spacing = 7
             vspacing = 2
             offset = spacing / -2 if numTeams % 2 == 0 else 0
@@ -780,25 +790,40 @@ class Map(DirectObject):
 
 class StaticGeometry(DirectObject):
     "A StaticGeometry is a potentially invisible, immovable physics object, modeled as a trimesh."
-    def __init__(self, space, directory, filename=None):
+    def __init__(self, world, worldNP, directory, filename=None):
         assert filename != None
         self.filename = filename
         self.node = loadModel(directory + "/" + self.filename)
         self.node.reparentTo(renderEnvironment)
         self.node.hide()
-        self.node.setCollideMask(BitMask32(1))
-        triMeshData = OdeTriMeshData(self.node, True)
-        self.geometry = OdeTriMeshGeom(space, triMeshData)
-        self.geometry.setCollideBits(BitMask32(0x00000001))
-        self.geometry.setCategoryBits(BitMask32(0x00000001))
-        space.setSurfaceType(self.geometry, 0)
+        self.node.setCollideMask(BitMask32(1))        
+            
+        triMeshData = BulletTriangleMesh()    
+        for np in self.node.findAllMatches("**/+GeomNode"):   
+            geomNode=np.node()
+        try:
+            for i in range(geomNode.getNumGeoms()):
+                geom=geomNode.getGeom(i)
+                triMeshData.addGeom(geom)
+        except:
+            print "error loading geom:" (geomNode)  
+        shape = BulletTriangleMeshShape(triMeshData, dynamic=False)        
+        self.geometry = worldNP.attachNewNode(BulletRigidBodyNode('StaticGeometry'))
+        self.geometry.node().addShape(shape)
+        world.attachRigidBody(self.geometry.node())       
+        
+        #triMeshData = OdeTriMeshData(self.node, True)
+        #self.geometry = OdeTriMeshGeom(space, triMeshData)
+        #self.geometry.setCollideBits(BitMask32(0x00000001))
+        #self.geometry.setCategoryBits(BitMask32(0x00000001))
+        #space.setSurfaceType(self.geometry, 0)
     
     def setPosition(self, pos):
-        self.geometry.setPosition(pos)
+        self.geometry.setPos(pos)
         self.node.setPos(pos)
     
     def getPosition(self):
-        return self.geometry.getPosition()
+        return self.geometry.getPos()
     
     def setRotation(self, hpr):
         self.node.setHpr(hpr)
@@ -809,11 +834,11 @@ class StaticGeometry(DirectObject):
         
     def commitChanges(self):
         "Updates the NodePath to reflect the position of the ODE geometry."
-        self.node.setPosQuat(renderEnvironment, self.getPosition(), Quat(self.geometry.getQuaternion()))
+        self.node.setPosQuat(renderEnvironment, self.getPosition(), Quat(self.geometry.getQuat()))
 
 class SpawnPoint(DirectObject):
     "Marks a location for units to spawn."
-    def __init__(self, space):
+    def __init__(self):
         self.node = loadModel("models/spawnpoint/SpawnPoint")
         self.node.reparentTo(renderEnvironment)
         self.active = True
@@ -836,7 +861,7 @@ class SpawnPoint(DirectObject):
 
 class Dock(SpawnPoint):
     "Docks have a one-to-one relationship with Teams. Their Controllers increment the team's money and spawn newly purchased units."
-    def __init__(self, space, teamIndex):
+    def __init__(self, teamIndex=None):
         self.teamIndex = teamIndex
         self.active = True
         self.radius = 6
@@ -860,49 +885,68 @@ class Dock(SpawnPoint):
 
 class Platform(DirectObject):
     "Makes a platform upon which to parade the game winners."
-    def __init__(self, space):
+    def __init__(self, world, worldNP):
         self.node = loadModel("maps/platform")
         self.node.reparentTo(renderEnvironment)
         self.collisionNode = CollisionNode("cnode")
         self.collisionNode.addSolid(CollisionSphere(0, 0, 0, 5))
         self.collisionNodePath = self.node.attachNewNode(self.collisionNode)
         self.collisionNode.setCollideMask(BitMask32(1))
-        odeCollisionNode = loadModel("maps/platform-geometry")
-        triMeshData = OdeTriMeshData(odeCollisionNode, True)
-        self.geometry = OdeTriMeshGeom(space, triMeshData)
-        self.geometry.setCollideBits(BitMask32(0x00000001))
-        self.geometry.setCategoryBits(BitMask32(0x00000001))
-        space.setSurfaceType(self.geometry, 0)
+        
+        odeCollisionNode = loadModel("maps/platform-geometry")        
+        triMeshData = BulletTriangleMesh()    
+        for np in odeCollisionNode.findAllMatches("**/+GeomNode"):   
+            geomNode=np.node()
+        try:
+            for i in range(geomNode.getNumGeoms()):
+                geom=geomNode.getGeom(i)
+                triMeshData.addGeom(geom)
+        except:
+            print "error loading geom:" (geomNode)  
+        shape = BulletTriangleMeshShape(triMeshData, dynamic=False)        
+        self.geometry = worldNP.attachNewNode(BulletRigidBodyNode('Mesh'))
+        self.geometry.node().addShape(shape)
+        #world.attachRigidBody(self.geometry.node())         
+        self.world=world
+             
+        #triMeshData = OdeTriMeshData(odeCollisionNode, True)
+        #self.geometry = OdeTriMeshGeom(space, triMeshData)
+        #self.geometry.setCollideBits(BitMask32(0x00000001))
+        #self.geometry.setCategoryBits(BitMask32(0x00000001))
+        #space.setSurfaceType(self.geometry, 0)
     
     def setPosition(self, pos):
-        self.geometry.setPosition(pos)
+        self.geometry.setPos(pos)
         self.node.setPos(pos)
     
     def getPosition(self):
-        return self.geometry.getPosition()
+        return self.geometry.getPos()
     
     def setRotation(self, hpr):
         self.node.setHpr(hpr)
-        self.geometry.setQuaternion(self.node.getQuat(render))
+        self.geometry.setQuat(self.node.getQuat(render))
     
     def getRotation(self):
         return self.node.getHpr()
     
     def show(self):
-        self.geometry.enable()
+        #self.geometry.enable()
+        self.world.attachRigidBody(self.geometry.node()) 
         self.node.reparentTo(renderEnvironment)
     
     def hide(self):
-        self.geometry.disable()
+        #self.geometry.disable()
+        self.world.remove(self.geometry.node()) 
         self.node.reparentTo(hidden)
     
     def delete(self):
         deleteModel(self.node, "models/spawnpoint/SpawnPoint")
-        self.geometry.destroy()
+        #self.geometry.destroy()
+        self.world.remove(self.geometry.node()) 
         
     def commitChanges(self):
         "Updates the NodePath to reflect the position of the ODE geometry."
-        self.node.setPosQuat(renderEnvironment, self.getPosition(), Quat(self.geometry.getQuaternion()))
+        self.node.setPosQuat(renderEnvironment, self.getPosition(), Quat(self.geometry.getQuat()))
 
 class Mouse:
     """A mouse can be created by any object that needs it (usually a controller).

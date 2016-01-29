@@ -307,18 +307,25 @@ class PointControlBackend(ServerBackend):
     
     def spawnPod(self):
         size = self.map.worldSize * 0.8
-        queue = None
-        while queue == None or queue.getNumEntries() == 0:
-            queue = self.aiWorld.getCollisionQueue(Vec3(uniform(-size, size), uniform(-size, size), 100), Vec3(0, 0, -1))
-            pos = None
-            for i in range(queue.getNumEntries()):
-                entry = queue.getEntry(i)
-                if entry.getSurfaceNormal(render).getZ() >= 0:
-                    pos = entry.getSurfacePoint(render)
-                    break
-            if pos == None or self.aiWorld.navMesh.getNode(pos) == None:
-                queue = None
-        pod = entities.DropPod(self.aiWorld.world, self.aiWorld.space)
+        #make the pod hit the level
+        pos=None
+        while pos==None:
+            result = self.aiWorld.world.rayTestClosest(Vec3(uniform(-size, size), uniform(-size, size), 100), Vec3(0, 0, -1))
+            if result.hasHit():
+                if self.aiWorld.navMesh.getNode(result.getHitPos()):
+                    pos=result.getHitPos()        
+        #queue = None
+        #while queue == None or queue.getNumEntries() == 0:
+        #    queue = self.aiWorld.getCollisionQueue(Vec3(uniform(-size, size), uniform(-size, size), 100), Vec3(0, 0, -1))
+        #    pos = None
+        #    for i in range(queue.getNumEntries()):
+        #        entry = queue.getEntry(i)
+        #        if entry.getSurfaceNormal(render).getZ() >= 0:
+        #            pos = entry.getSurfacePoint(render)
+        #            break
+        #    if pos == None or self.aiWorld.navMesh.getNode(pos) == None:
+        #        queue = None
+        pod = entities.DropPod(self.aiWorld.world, self.aiWorld.worldNP)
         pod.controller.setFinalPosition(pos)
         self.entityGroup.spawnEntity(pod)
         self.lastPodSpawn = engine.clock.time
