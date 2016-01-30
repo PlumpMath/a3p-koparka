@@ -71,7 +71,8 @@ class World:
         # Setup the Bullet world
         self.worldNP = render.attachNewNode('World')
         self.world = BulletWorld()
-        self.world.setGravity(Vec3(0, 0,  -35.0)) #why not -9.81 ?
+        #self.world.setGravity(Vec3(0, 0,  -35.0)) #why not -9.81 ?
+        self.world.setGravity(Vec3(0, 0,  -9.81)) 
 
         
         # Setup the physics world
@@ -96,8 +97,8 @@ class World:
     
     def update(self):
         "Steps the Bullet simulation."
-        #dt = globalClock.getDt() #not sure what's wrong with the default way p3d tracks time...?
-        dt=engine.clock.timeStep
+        dt = globalClock.getDt() #not sure what's wrong with the default way p3d tracks time...?
+        #dt=engine.clock.timeStep
         self.world.doPhysics(dt, 5, 1.0/180.0)
         
         #self.space.autoCollide()

@@ -303,7 +303,7 @@ class PointControlBackend(ServerBackend):
             self.lastPodSpawnCheck = engine.clock.time
             if len([1 for x in self.entityGroup.entities.values() if isinstance(x, entities.DropPod)]) < numPods\
             and len([1 for team in self.entityGroup.teams if team.getPlayer() != None and team.getPlayer().active]) > 0:
-                self.spawnPod()
+                self.spawnPod()                
     
     def spawnPod(self):
         size = self.map.worldSize * 0.8

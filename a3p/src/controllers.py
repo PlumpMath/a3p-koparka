@@ -832,7 +832,7 @@ class DroidController(ActorController):
         self.activeWeapon = 0
         self.lastActiveWeapon = -1
         self.targetPos = Vec3(0, 0, 0)
-        self.torque = 300
+        self.torque = 80
         self.maxSpeed = 1
         self.lastDamage = 0
         self.alarmSound = audio.SoundPlayer("alarm")
@@ -1189,9 +1189,14 @@ class PlayerController(DroidController):
             self.reload()
             self.keyMap["reload"] = False
         if self.keyMap["jump"]:
-            result=aiWorld.world.contactTest(self.entity.collisionNodePath)
+            result=aiWorld.world.contactTest(self.entity.collisionNodePath.node())
+            print result.getNumContacts() 
+            for contact in result.getContacts():
+                print contact.getNode0()
+                print contact.getNode1()            
             if engine.clock.time - self.lastJump > 0.25 and result.getNumContacts() > 0:
                 self.lastJump = engine.clock.time
+                print self.entity.getLinearVelocity() + Vec3(0, 0, 16)
                 self.entity.setLinearVelocity(self.entity.getLinearVelocity() + Vec3(0, 0, 16))
         if self.keyMap["switch-weapon"]:
             self.keyMap["switch-weapon"] = False
@@ -1259,8 +1264,9 @@ class PlayerController(DroidController):
             if angularVel.length() > maxSpeed:
                 angularVel.normalize()
                 self.entity.setAngularVelocity(angularVel * maxSpeed)
-        else:
-            self.entity.addTorque(Vec3(engine.impulseToForce(-angularVel.getX() * 20), engine.impulseToForce(-angularVel.getY() * 20), engine.impulseToForce(-angularVel.getZ() * 20)))
+        #else:
+            #this is done by setAngularDamping(0.5)
+            #self.entity.addTorque(Vec3(engine.impulseToForce(-angularVel.getX() * 20), engine.impulseToForce(-angularVel.getY() * 20), engine.impulseToForce(-angularVel.getZ() * 20)))
 
         if self.isPlatformMode:
             #self.pick_from=Point3(self.entity.getPosition())

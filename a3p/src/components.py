@@ -199,8 +199,8 @@ class Gun(Weapon):
             pos = result.getHitPos()
             normal = result.getHitNormal()
             entity = entityGroup.getEntityFromEntry(entry)            
-            return (entity, pos, normal, queue)
-        return (None, None, None, None)    
+            return (entity, pos, normal)
+        return (None, None, None)    
         #queue = aiWorld.getCollisionQueue(origin, direction)
         #for i in range(queue.getNumEntries()):
         #    entry = queue.getEntry(i)
@@ -322,7 +322,7 @@ class ChainGun(Gun):
             entity = None
             hitPos = None
             if direction.length() > 0:
-                entity, hitPos, normal, queue = self.bulletTest(aiWorld, entityGroup, origin, direction)
+                entity, hitPos, normal = self.bulletTest(aiWorld, entityGroup, origin, direction)
             if hitPos == None:
                 p.add(net.Boolean(False)) # Bullet didn't hit anything
             else:
@@ -418,7 +418,7 @@ class Shotgun(Gun):
             entity = None
             hitPos = None
             if direction.length() > 0:
-                entity, hitPos, normal, queue = self.bulletTest(aiWorld, entityGroup, origin, direction)
+                entity, hitPos, normal = self.bulletTest(aiWorld, entityGroup, origin, direction)
             if hitPos == None:
                 p.add(net.Boolean(False)) # Bullet didn't hit anything
             else:
@@ -520,7 +520,7 @@ class SniperRifle(Gun):
 
             p.add(net2.StandardVec3(direction))
             
-            entity, hitPos, normal, queue = self.bulletTest(aiWorld, entityGroup, origin, direction)
+            entity, hitPos, normal = self.bulletTest(aiWorld, entityGroup, origin, direction)
             if hitPos == None:
                 p.add(net.Boolean(False)) # Bullet didn't hit anything
             else:
@@ -841,7 +841,7 @@ class Pistol(Gun):
             entity = None
             hitPos = None
             if direction.length() > 0:
-                entity, hitPos, normal, queue = self.bulletTest(aiWorld, entityGroup, origin, direction)
+                entity, hitPos, normal = self.bulletTest(aiWorld, entityGroup, origin, direction)
             if hitPos == None:
                 p.add(net.Boolean(False)) # Bullet didn't hit anything
             else:

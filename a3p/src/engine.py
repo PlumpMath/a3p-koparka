@@ -402,7 +402,7 @@ class Map(DirectObject):
 
     def deleteStaticGeometry(self, geom):
         geom.node.removeNode()
-        geom.geometry.destroy()
+        geom.geometry.removeNode()
         if geom.node in self.staticGeometries:
             del self.staticGeometries[geom.node]
     
@@ -809,7 +809,8 @@ class StaticGeometry(DirectObject):
             print "error loading geom:" (geomNode)  
         shape = BulletTriangleMeshShape(triMeshData, dynamic=False)        
         self.geometry = worldNP.attachNewNode(BulletRigidBodyNode('StaticGeometry'))
-        self.geometry.node().addShape(shape)
+        self.geometry.node().addShape(shape)        
+        self.geometry.node().setMass(0.0)
         world.attachRigidBody(self.geometry.node())       
         
         #triMeshData = OdeTriMeshData(self.node, True)
@@ -906,7 +907,7 @@ class Platform(DirectObject):
         shape = BulletTriangleMeshShape(triMeshData, dynamic=False)        
         self.geometry = worldNP.attachNewNode(BulletRigidBodyNode('Mesh'))
         self.geometry.node().addShape(shape)
-        #world.attachRigidBody(self.geometry.node())         
+        world.attachRigidBody(self.geometry.node())         
         self.world=world
              
         #triMeshData = OdeTriMeshData(odeCollisionNode, True)

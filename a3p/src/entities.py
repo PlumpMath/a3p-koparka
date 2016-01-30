@@ -396,30 +396,40 @@ class DropPod(ObjectEntity):
             for _ in range(8):
                 offset = Vec3(uniform(-1, 1), uniform(-1, 1), uniform(0, 1))
                 offset.normalize()
-                fragment = Fragment(aiWorld.world, aiWorld.space, position + (offset * 1.5), offset * 30)
+                fragment = Fragment(aiWorld.world, aiWorld.worldNP, position + (offset * 1.5), offset * 30)
                 entityGroup.generateEntityId(fragment, 1024)
                 entityGroup.addEntity(fragment)
         ObjectEntity.kill(self, aiWorld, entityGroup, localDelete)
 
 class Fragment(ObjectEntity):
-    def __init__(self, world, space, pos, velocity):
+    def __init__(self, world, worldNP, pos, velocity):
         ObjectEntity.__init__(self, "models/fragment/Fragment", controllers.FragmentController(velocity), True)
         self.radius = 0.7
-        size = self.radius * 2
-        self.body = OdeBody(world)
-        M = OdeMass()
-        M.setBox(3, size, size, 0.4)
-        self.body.setMass(M)
-        self.geometry = OdeBoxGeom(space, size, size, 0.4)
-        self.geometry.setCollideBits(BitMask32(0x00000001))
-        self.geometry.setCategoryBits(BitMask32(0x00000001))
-        self.geometry.setBody(self.body)
+        #size = self.radius * 2
+        size = self.radius
+        
+        self.body = BulletBoxShape(Vec3(size, size, 0.4))
+        self.geometry = worldNP.attachNewNode(BulletRigidBodyNode('Fragment'))
+        self.geometry.node().setMass(3.0)
+        self.geometry.node().addShape(self.body)
+        world.attachRigidBody(self.geometry.node())
+        
+        
+        #self.body = OdeBody(world)
+        #M = OdeMass()
+        #M.setBox(3, size, size, 0.4)
+        #self.body.setMass(M)
+        #self.geometry = OdeBoxGeom(space, size, size, 0.4)
+        #self.geometry.setCollideBits(BitMask32(0x00000001))
+        #self.geometry.setCategoryBits(BitMask32(0x00000001))
+        #self.geometry.setBody(self.body)
+        
         self.setPosition(pos)
         self.node.setHpr(uniform(0, 360), uniform(0, 360), uniform(0, 360))
         self.body.setQuaternion(self.node.getQuat())
         vel = 5
         self.setAngularVelocity(Vec3(uniform(-vel, vel), uniform(-vel, vel), uniform(-vel, vel)))
-        space.setSurfaceType(self.geometry, 2)
+        #space.setSurfaceType(self.geometry, 2)
 
 class GlassFragment(Fragment):
     def __init__(self, world, space, pos, velocity):
@@ -827,7 +837,9 @@ class BasicDroid(Actor):
         
         self.geometry = BulletSphereShape(self.radius)
         self.body = worldNP.attachNewNode(BulletRigidBodyNode('BasicDroid'))
-        self.body.node().setMass(15.0)
+        self.body.node().setMass(10.0)
+        self.body.node().setFriction(5.0)
+        self.body.node().setAngularDamping(0.5)
         self.body.node().addShape(self.geometry)
         world.attachRigidBody(self.body.node())
         
