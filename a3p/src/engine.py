@@ -633,7 +633,7 @@ class Map(DirectObject):
                     data = readPhysicsEntityFile(file)
                     parts = tokens[1].rpartition("/")
                     directory = mapDirectory + "/" + parts[0]
-                    obj = entities.PhysicsEntity(aiWorld.world, aiWorld.space, data, directory, tokens[1])
+                    obj = entities.PhysicsEntity(aiWorld.world, aiWorld.worldNP, data, directory, tokens[1])
                     obj.setPosition(Vec3(float(tokens[2]), float(tokens[3]), float(tokens[4])))
                     obj.setRotation(Vec3(float(tokens[5]), float(tokens[6]), float(tokens[7])))
                     obj.controller.commitLastPosition()

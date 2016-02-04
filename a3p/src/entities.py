@@ -56,20 +56,20 @@ class EntityGroup(DirectObject):
 
     def getEntityFromEntry(self, entry):
         "Gets the ObjectEntity specified by the given collision entry, if one exists."
-        entity=None
-        if entry != None:
-            if entry.hasPythonTag('entity'):
-                entity=entry.getPythonTag('entity')
-        return entity
-            
+        #entity=None
         #if entry != None:
-        #    entity = self.getEntity(entry.getIntoNodePath().getParent().getName())
-        #    if entity == None:
-        #        return self.getEntity(entry.getIntoNodePath().getName())
-        #    else:
-        #        return entity
-        #else:
-        #    return None
+        #    if entry.hasPythonTag('entity'):
+        #        entity=entry.getPythonTag('entity')
+        #return entity
+            
+        if entry != None:
+            entity = self.getEntity(entry.getIntoNodePath().getParent().getName())
+            if entity == None:
+                return self.getEntity(entry.getIntoNodePath().getName())
+            else:
+                return entity
+        else:
+            return None
     
     def spawnEntity(self, entity):
         "Spawning an ObjectEntity involves sending off a network packet so everyone else has the ObjectEntity too."
@@ -303,8 +303,9 @@ class ObjectEntity(Entity):
         self.body.node().applyForce(force)
     
     def addForceAtPosition(self, direction, position):
-        self.body.addForceAtPos(direction.getX(), direction.getY(), direction.getZ(), position.getX(), position.getY(), position.getZ())
-
+        #self.body.addForceAtPos(direction.getX(), direction.getY(), direction.getZ(), position.getX(), position.getY(), position.getZ())
+        self.body.node().applyForce(direction, position)
+        
     def commitChanges(self):
         "Updates the visual orientation and position of this ObjectEntity to reflect that of the ODE body."
         self.node.setPosQuat(engine.renderObjects, self.getPosition(), Quat(self.body.getQuat()))
@@ -349,7 +350,7 @@ class DropPod(ObjectEntity):
         
         shape = BulletSphereShape(self.radius)
         self.body = worldNP.attachNewNode(BulletRigidBodyNode('DropPod'))
-        self.body.node().setMass(2.0)
+        self.body.node().setMass(30.0)
         self.body.node().addShape(shape)        
         world.attachRigidBody(self.body.node())
         
@@ -389,7 +390,7 @@ class DropPod(ObjectEntity):
     def kill(self, aiWorld, entityGroup, localDelete = True):
         if self.active:
             position = self.getPosition()
-            entityGroup.explode(position, force = 5000, damage = 80, damageRadius = 25, sourceEntity = self, damagingEntity = None) # Give damage credit to our parent actor
+            entityGroup.explode(position, force = 50, damage = 80, damageRadius = 25, sourceEntity = self, damagingEntity = None) # Give damage credit to our parent actor
             explosionSound = audio.SoundPlayer("large-explosion")
             explosionSound.play(position = position)
             # Add fragments
@@ -408,13 +409,12 @@ class Fragment(ObjectEntity):
         #size = self.radius * 2
         size = self.radius
         
-        self.body = BulletBoxShape(Vec3(size, size, 0.4))
-        self.geometry = worldNP.attachNewNode(BulletRigidBodyNode('Fragment'))
-        self.geometry.node().setMass(3.0)
-        self.geometry.node().addShape(self.body)
-        world.attachRigidBody(self.geometry.node())
-        
-        
+        shape = BulletBoxShape(Vec3(size, size, 0.4))
+        self.body = worldNP.attachNewNode(BulletRigidBodyNode('DropPod'))
+        self.body.node().setMass(30.0)
+        self.body.node().addShape(shape)        
+        world.attachRigidBody(self.body.node())
+                
         #self.body = OdeBody(world)
         #M = OdeMass()
         #M.setBox(3, size, size, 0.4)
@@ -426,7 +426,7 @@ class Fragment(ObjectEntity):
         
         self.setPosition(pos)
         self.node.setHpr(uniform(0, 360), uniform(0, 360), uniform(0, 360))
-        self.body.setQuaternion(self.node.getQuat())
+        self.body.setQuat(self.node.getQuat())
         vel = 5
         self.setAngularVelocity(Vec3(uniform(-vel, vel), uniform(-vel, vel), uniform(-vel, vel)))
         #space.setSurfaceType(self.geometry, 2)
@@ -455,7 +455,7 @@ class GlassFragment(Fragment):
 class Glass(ObjectEntity):
     def __init__(self, world, worldNP):
         ObjectEntity.__init__(self, "models/fragment/GlassFragment", controllers.GlassController())
-        self.body =worldNP.attachNewNode(BulletRigidBodyNode('Glass'))
+        #self.body =worldNP.attachNewNode(BulletRigidBodyNode('Glass'))
         #self.body = OdeBody(world)
         
     def initGlass(self, world, worldNP, width, height):
@@ -480,10 +480,10 @@ class Glass(ObjectEntity):
         self.collisionNode.addSolid(CollisionPolygon(point1, point2, point3, point4))
         self.collisionNodePath = self.node.attachNewNode(self.collisionNode)
         
-        shape = BulletBoxShape(Vec3(width*0.5, 0.25, height*0.5))#??
-        self.geometry = worldNP.attachNewNode(BulletRigidBodyNode('Box'))
-        self.geometry.node().addShape(shape)
-        world.attachRigidBody(self.geometry.node())
+        shape = BulletBoxShape(Vec3(width*0.5, 0.25, height*0.5))#??        
+        self.body = worldNP.attachNewNode(BulletRigidBodyNode('Box'))
+        self.body.node().addShape(shape)
+        world.attachRigidBody(self.body.node())
         
         #self.geometry = OdeBoxGeom(space, width, 0.5, height)
         #self.geometry.setCollideBits(BitMask32(0x00000001))
@@ -596,7 +596,7 @@ class PhysicsEntity(ObjectEntity):
                 #geom.setOffsetPosition(offsetx, offsety, offsetz)
                 #space.setSurfaceType(geom, 1)               
                 if geom:
-                    self.body.node().addShape(shape)
+                    self.body.node().addShape(geom)
                 if self.geometry == None:
                     self.geometry = geom #???
                 else:
@@ -837,11 +837,21 @@ class BasicDroid(Actor):
         
         self.geometry = BulletSphereShape(self.radius)
         self.body = worldNP.attachNewNode(BulletRigidBodyNode('BasicDroid'))
-        self.body.node().setMass(10.0)
-        self.body.node().setFriction(5.0)
-        self.body.node().setAngularDamping(0.5)
-        self.body.node().addShape(self.geometry)
+        self.body.node().setMass(15.0)
+        self.body.node().setFriction(10.0)
+        self.body.node().setAngularDamping(0.6)
+        self.body.node().addShape(self.geometry)        
+        self.body.node().setDeactivationEnabled(False)
+        # Enable CCD
+        #self.body.node().setCcdMotionThreshold(1e-7)
+        #self.body.node().setCcdSweptSphereRadius(self.radius*0.8)        
         world.attachRigidBody(self.body.node())
+        
+        #ghost part
+        #ghost_shape = BulletSphereShape(self.radius)
+        #self.ghost = self.sphere_np.attachNewNode(BulletGhostNode('Ghost'))
+        #self.ghost.node().addShape(ghost_shape)
+        #self.world.attachGhost(self.ghost.node()) 
         
         
         #self.body = OdeBody(world)
@@ -959,9 +969,8 @@ class Grenade(ObjectEntity):
         self.radius = 0.2
         self.geometry = BulletSphereShape(self.radius)
         self.body = worldNP.attachNewNode(BulletRigidBodyNode('Grenade'))
-        self.body.node().setMass(500)#?
+        self.body.node().setMass(50.0)#?
         self.body.node().addShape(self.geometry)
-        self.body.setPos(3, 0, 4)    
         world.attachRigidBody(self.body.node())
     
         #self.body = OdeBody(world)
@@ -1011,11 +1020,11 @@ class Grenade(ObjectEntity):
             grenadeSound = audio.SoundPlayer("grenade")
             grenadeSound.play(position = self.getPosition())
             ObjectEntity.kill(self, aiWorld, entityGroup, localDelete)
-            entityGroup.explode(pos, force = 4000, damage = 67, damageRadius = 20, sourceEntity = self, damagingEntity = self.actor) # Give damage credit to our parent actor
+            entityGroup.explode(pos, force = 40, damage = 67, damageRadius = 20, sourceEntity = self, damagingEntity = self.actor) # Give damage credit to our parent actor
 
 class Molotov(ObjectEntity):
     "Molotovs are basically flaming grenades. Most of the action happens in the MolotovController."
-    def __init__(self, world, space):
+    def __init__(self, world, worldNP):
         self.team = None
         ObjectEntity.__init__(self, "models/grenade/Grenade", controllers.MolotovController())
         self.collisionNode = CollisionNode("cnode")
@@ -1024,9 +1033,8 @@ class Molotov(ObjectEntity):
         self.radius = 0.2
         self.geometry = BulletSphereShape(self.radius)
         self.body = worldNP.attachNewNode(BulletRigidBodyNode('Grenade'))
-        self.body.node().setMass(500)#?
+        self.body.node().setMass(5.0)#?
         self.body.node().addShape(self.geometry)
-        self.body.setPos(3, 0, 4)    
         world.attachRigidBody(self.body.node())
         #self.body = OdeBody(world)
         #M = OdeMass()

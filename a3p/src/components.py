@@ -193,24 +193,16 @@ class Gun(Weapon):
     def bulletTest(self, aiWorld, entityGroup, origin, direction):
         """Low-level bullet ray test used by most guns.
         Returns the position of the bullet hit, and the ObjectEntity damaged, if any."""
-        result = aiWorld.world.rayTestClosest(origin, direction)
-        if result.hasHit():
-            entry = result.getNode() #???
-            pos = result.getHitPos()
-            normal = result.getHitNormal()
-            entity = entityGroup.getEntityFromEntry(entry)            
-            return (entity, pos, normal)
-        return (None, None, None)    
-        #queue = aiWorld.getCollisionQueue(origin, direction)
-        #for i in range(queue.getNumEntries()):
-        #    entry = queue.getEntry(i)
-        #    pos = entry.getSurfacePoint(render)
-        #    normal = entry.getSurfaceNormal(render)
-        #    entity = entityGroup.getEntityFromEntry(entry)
-        #    if entity == self.actor:
-        #        continue
-        #    return (entity, pos, normal, queue)
-        #return (None, None, None, None)
+        queue = aiWorld.getCollisionQueue(origin, direction)
+        for i in range(queue.getNumEntries()):
+            entry = queue.getEntry(i)
+            pos = entry.getSurfacePoint(render)
+            normal = entry.getSurfaceNormal(render)
+            entity = entityGroup.getEntityFromEntry(entry)
+            if entity == self.actor:
+                continue
+            return (entity, pos, normal, queue)
+        return (None, None, None, None)
 
     def serverUpdate(self, aiWorld, entityGroup, packetUpdate):
         p = Weapon.serverUpdate(self, aiWorld, entityGroup, packetUpdate)
@@ -322,7 +314,7 @@ class ChainGun(Gun):
             entity = None
             hitPos = None
             if direction.length() > 0:
-                entity, hitPos, normal = self.bulletTest(aiWorld, entityGroup, origin, direction)
+                entity, hitPos, normal, queue = self.bulletTest(aiWorld, entityGroup, origin, direction)
             if hitPos == None:
                 p.add(net.Boolean(False)) # Bullet didn't hit anything
             else:
@@ -418,7 +410,7 @@ class Shotgun(Gun):
             entity = None
             hitPos = None
             if direction.length() > 0:
-                entity, hitPos, normal = self.bulletTest(aiWorld, entityGroup, origin, direction)
+                entity, hitPos, normal, queue = self.bulletTest(aiWorld, entityGroup, origin, direction)
             if hitPos == None:
                 p.add(net.Boolean(False)) # Bullet didn't hit anything
             else:
@@ -520,7 +512,7 @@ class SniperRifle(Gun):
 
             p.add(net2.StandardVec3(direction))
             
-            entity, hitPos, normal = self.bulletTest(aiWorld, entityGroup, origin, direction)
+            entity, hitPos, normal, queue = self.bulletTest(aiWorld, entityGroup, origin, direction)
             if hitPos == None:
                 p.add(net.Boolean(False)) # Bullet didn't hit anything
             else:
@@ -712,7 +704,7 @@ GRENADE_LAUNCHER = 249
 class GrenadeLauncher(Weapon):
     def __init__(self, actor, id):
         Weapon.__init__(self, actor, id)
-        self.force = 400
+        self.force = 40
         self.grenadeLaunchSound = audio.SoundPlayer("grenade-launch")
         self.fireTime = 2.25
         self.grenadeId = -1
@@ -722,17 +714,17 @@ class GrenadeLauncher(Weapon):
         p.add(net.Boolean(self.firing))
         if self.firing:
             self.addCriticalPacket(p, packetUpdate)
-            direction = self.actor.controller.targetPos - self.actor.getPosition()
+            direction = self.actor.controller.targetPos - self.actor.getPosition() 
             direction.normalize()
             direction.setZ(direction.getZ() + 0.5)
             direction.normalize()
             
             origin = self.actor.getPosition() + (direction * (self.actor.radius + 0.1))
-            grenade = entities.Grenade(aiWorld.world, aiWorld.space)
+            grenade = entities.Grenade(aiWorld.world, aiWorld.worldNP)
             grenade.setTeam(self.actor.getTeam())
             grenade.setActor(self.actor)
             grenade.setPosition(origin)
-            grenade.setLinearVelocity(direction * 40)
+            grenade.setLinearVelocity(direction * 4)
             entityGroup.spawnEntity(grenade)
             p.add(net.Uint8(grenade.getId()))
         self.firing = False
@@ -772,7 +764,7 @@ class MolotovThrower(Weapon):
             direction.normalize()
             
             origin = self.actor.getPosition() + (direction * (self.actor.radius + 0.1))
-            grenade = entities.Molotov(aiWorld.world, aiWorld.space)
+            grenade = entities.Molotov(aiWorld.world, aiWorld.worldNP)
             grenade.setTeam(self.actor.getTeam())
             grenade.setActor(self.actor)
             grenade.setPosition(origin)
@@ -841,7 +833,7 @@ class Pistol(Gun):
             entity = None
             hitPos = None
             if direction.length() > 0:
-                entity, hitPos, normal = self.bulletTest(aiWorld, entityGroup, origin, direction)
+                entity, hitPos, normal, queue = self.bulletTest(aiWorld, entityGroup, origin, direction)
             if hitPos == None:
                 p.add(net.Boolean(False)) # Bullet didn't hit anything
             else:

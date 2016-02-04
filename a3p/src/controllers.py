@@ -231,7 +231,7 @@ class TeamEntityController(Controller):
                 u.setUsername(self.entity.getUsername())
                 u.controller.setPlatformMode(isPlatformSpawn)
             else:
-                u = entities.BasicDroid(aiWorld.world, aiWorld.space, controller = AIController(), local = net.netMode == net.MODE_SERVER)
+                u = entities.BasicDroid(aiWorld.world, aiWorld.worldNP, controller = AIController(), local = net.netMode == net.MODE_SERVER)
                 u.setWeapons([type])
                 u.setSpecial(special)
                 u.teamIndex = purchase[3]
@@ -660,7 +660,7 @@ class GrenadeController(ObjectController):
             self.entity.kill(aiWorld, entityGroup)
         
         if self.bounceTime == -1:
-            result = aiWorld.world.contactTest(self.entity.collisionNodePath)
+            result = aiWorld.world.contactTest(self.entity.body.node())
             if result.getNumContacts() > 0:
                 self.trigger()
             #if aiWorld.testCollisions(self.entity.collisionNodePath).getNumEntries() > 0:
@@ -1189,15 +1189,10 @@ class PlayerController(DroidController):
             self.reload()
             self.keyMap["reload"] = False
         if self.keyMap["jump"]:
-            result=aiWorld.world.contactTest(self.entity.collisionNodePath.node())
-            print result.getNumContacts() 
-            for contact in result.getContacts():
-                print contact.getNode0()
-                print contact.getNode1()            
+            result=aiWorld.world.contactTest(self.entity.body.node())                    
             if engine.clock.time - self.lastJump > 0.25 and result.getNumContacts() > 0:
-                self.lastJump = engine.clock.time
-                print self.entity.getLinearVelocity() + Vec3(0, 0, 16)
-                self.entity.setLinearVelocity(self.entity.getLinearVelocity() + Vec3(0, 0, 16))
+                self.lastJump = engine.clock.time               
+                self.entity.setLinearVelocity(self.entity.getLinearVelocity() + Vec3(0, 0, 8.0))
         if self.keyMap["switch-weapon"]:
             self.keyMap["switch-weapon"] = False
             if self.activeWeapon == 1:
@@ -1257,15 +1252,14 @@ class PlayerController(DroidController):
         torque = self.torque
         self.sprinting = self.keyMap["sprint"]
         if self.keyMap["sprint"]:
-            maxSpeed *= 1.5
-            torque *= 1.5
+            maxSpeed *= 2.0
+            torque *= 2.0
         if move:
             self.entity.addTorque(Vec3(engine.impulseToForce(torque * math.cos(angleX)), engine.impulseToForce(-torque * math.sin(angleX)), 0))
             if angularVel.length() > maxSpeed:
                 angularVel.normalize()
                 self.entity.setAngularVelocity(angularVel * maxSpeed)
-        #else:
-            #this is done by setAngularDamping(0.5)
+        #else:            
             #self.entity.addTorque(Vec3(engine.impulseToForce(-angularVel.getX() * 20), engine.impulseToForce(-angularVel.getY() * 20), engine.impulseToForce(-angularVel.getZ() * 20)))
 
         if self.isPlatformMode:
@@ -1511,8 +1505,9 @@ class AIController(DroidController):
                     vector.normalize()
                     if engine.clock.time - self.lastTargetCheck > 1.0:
                         self.lastTargetCheck = engine.clock.time
-                        result=aiWorld.world.rayTestClosest(self.entity.getPosition() + (vector * (self.entity.radius + 0.2)), vector)
-                        self.enemyLastVisible = entityGroup.getEntityFromEntry(result.getNode()) == self.nearestEnemy
+                        #result=aiWorld.world.rayTestClosest(self.entity.getPosition() + (vector * (self.entity.radius + 0.2)), vector)
+                        #self.enemyLastVisible = entityGroup.getEntityFromEntry(result.getNode()) == self.nearestEnemy
+                        self.enemyLastVisible = entityGroup.getEntityFromEntry(aiWorld.getFirstCollision(self.entity.getPosition() + (vector * (self.entity.radius + 0.2)), vector)) == self.nearestEnemy
                     if self.enemyLastVisible:
                         weapon.burstTimer = engine.clock.time
                         weapon.burstDelayTimer = -1

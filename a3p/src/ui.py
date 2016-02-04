@@ -1125,7 +1125,7 @@ class LoginDialog(DirectObject):
         self.dialog.hide()
         self.lastShow = -1
         self.lastHide = -1
-        self.transitionTime = 0.15
+        self.transitionTime = 0.15   
         
     def update(self):
         if self.lastShow != -1:

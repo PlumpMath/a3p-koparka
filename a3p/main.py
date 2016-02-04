@@ -109,7 +109,7 @@ defaultMap = "impact"
 defaultHost = "127.0.0.1:1337"
 username = "Unnamed"
 tutorialOffset = 0
-skipIntro = False
+skipIntro = True
 
 i = 1
 while i < len(sys.argv):
@@ -187,8 +187,7 @@ def goMenu():
     gameBackend = None
     game = None
     
-    mainMenu = core.MainMenu(skipIntro)
-    
+    mainMenu = core.MainMenu(skipIntro)    
     menu = None
 
     def gameLoop(task):

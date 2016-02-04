@@ -946,9 +946,12 @@ class MainMenu(DirectObject):
         
         self.username = "Unnamed"
         
-        self.chatLog = ui.ChatLog(verticalOffset = -0.9, displayTime = -1, maxChats = 16, chatBoxAlwaysVisible = True, showOwnChats = False)
-        self.chatLog.hide()
-        self.chatConnection = GlobalChatConnection()
+        #removed for now .. or ever?
+        self.useChat=False
+        if self.useChat:
+            self.chatLog = ui.ChatLog(verticalOffset = -0.9, displayTime = -1, maxChats = 16, chatBoxAlwaysVisible = True, showOwnChats = False)
+            self.chatLog.hide()
+            self.chatConnection = GlobalChatConnection()
         
         self.startTime = -1
         self.goTime = -1
@@ -957,7 +960,7 @@ class MainMenu(DirectObject):
             if token != "" and token != "Unnamed":
                 self.setUsername(token)
                 self.loginDialogShown = True
-    
+        
     def escape(self):
         if self.hostList.visible:
             self.hostList.hide()
@@ -965,6 +968,7 @@ class MainMenu(DirectObject):
             self.mapList.hide()
     
     def startClient(self, host):
+        print "startClient"
         self.clickSound.play()
         self.hostList.hide()
         self.loadingScreen.show()
@@ -986,8 +990,9 @@ class MainMenu(DirectObject):
         engine.savedUsername = self.username
         engine.saveConfigFile()
         self.loginDialog.hide()
-        self.chatLog.setUsername(self.username)
-        self.chatLog.show()
+        if self.useChat:
+            self.chatLog.setUsername(self.username)
+            self.chatLog.show()
 
     def update(self):
         if not self.active:
@@ -1026,11 +1031,14 @@ class MainMenu(DirectObject):
             if not self.loginDialogShown and self.showLogin:
                 self.loginDialog.show()
                 self.loginDialogShown = True
-            elif self.chatLog.hidden and not self.showLogin:
-                self.chatLog.show()
+            else:
+                if self.useChat:                    
+                    if self.chatLog.hidden and not self.showLogin:                
+                        self.chatLog.show()
         
-        self.chatConnection.update()
-        self.chatLog.update()
+        if self.useChat:
+            self.chatConnection.update()
+            self.chatLog.update()
         
         self.uiAngle -= engine.clock.timeStep * 2
         self.text.setR(self.uiAngle)
@@ -1122,8 +1130,9 @@ class MainMenu(DirectObject):
             self.introText.destroy()
         self.introSound.stop()
         self.backgroundSound.stop()
-        self.chatLog.delete()
-        self.chatConnection.delete()
+        if self.useChat:
+            self.chatLog.delete()
+            self.chatConnection.delete()
 
 class JunkBelt:
     def __init__(self, radius):
