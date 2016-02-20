@@ -598,8 +598,8 @@ class Editor (DirectObject):
         #make sure things have some/any starting value
         self.setMode(MODE_HEIGHT)
         self.setBrush(0)
-        self.painter.brushes[BUFFER_ATR].setColor(0,0,0,1.0)
-        self.painter.brushes[BUFFER_ATR2].setColor(0,0,1,1.0)
+        self.painter.setBrushIDColor(BUFFER_ATR,(0,0,0,1.0))
+        self.painter.setBrushIDColor(BUFFER_ATR2,(0,0,1,1.0))
         self.setTime(12.0)
         #tasks
         taskMgr.add(self.perFrameUpdate, 'perFrameUpdate_task', sort=46)
@@ -996,7 +996,7 @@ class Editor (DirectObject):
                 #alpha (color)
                 if self.mode==MODE_HEIGHT and self.height_mode==HEIGHT_MODE_LEVEL:
                     self.tempColor=self.gui.ConfigOptions[1]
-                    self.painter.brushes[BUFFER_HEIGHT].setColor(self.tempColor,self.tempColor,self.tempColor,1)
+                    self.painter.setBrushIDColor(BUFFER_HEIGHT,(self.tempColor,self.tempColor,self.tempColor,1))
                     self.color_info['text']='%.2f'%self.tempColor
                 else:
                     self.painter.brushAlpha=self.gui.ConfigOptions[1]
@@ -1006,13 +1006,14 @@ class Editor (DirectObject):
     def changeGrassMode(self, mode=None, guiEvent=None):
         self.gui.grayOutButtons(self.grass_toolbar_id, (0,2), mode)
         self.painter.brushes[BUFFER_GRASS].setColor(mode,0,0,1)
+        self.painter.setBrushIDColor(BUFFER_GRASS,(mode,0,0,1))
 
     def changeWalkMode(self, mode=None, guiEvent=None):
         self.gui.grayOutButtons(self.walkmap_toolbar_id, (0,2), mode)
-        if mode==WALK_MODE_NOWALK:
-            self.painter.brushes[BUFFER_WALK].setColor(1,0,0, 1.0)
-        else:
-            self.painter.brushes[BUFFER_WALK].setColor(0,0,0, 1.0)
+        if mode==WALK_MODE_NOWALK:            
+            self.painter.setBrushIDColor(BUFFER_WALK,(1,0,0, 1.0))
+        else:          
+            self.painter.setBrushIDColor(BUFFER_WALK,(0,0,0, 1.0))
 
     def changeHeightMode(self, mode=None, guiEvent=None):
         if mode==None:
@@ -1021,14 +1022,14 @@ class Editor (DirectObject):
             mode=HEIGHT_MODE_UP
         if mode==HEIGHT_MODE_UP:
             self.tempColor=1
-            self.painter.brushAlpha=self.tempAlpha
-            self.painter.brushes[BUFFER_HEIGHT].setColor(1,1,1,self.painter.brushAlpha)
+            self.painter.brushAlpha=self.tempAlpha            
+            self.painter.setBrushIDColor(BUFFER_HEIGHT,(1,1,1,self.painter.brushAlpha))
             self.color_info['text']='%.2f'%self.tempAlpha
             self.painter.brushes[BUFFER_HEIGHT].setShaderInput('use_map', 0.0)
         if mode==HEIGHT_MODE_DOWN:
             self.tempColor=0
-            self.painter.brushAlpha=self.tempAlpha
-            self.painter.brushes[BUFFER_HEIGHT].setColor(0,0,0,self.painter.brushAlpha)
+            self.painter.brushAlpha=self.tempAlpha            
+            self.painter.setBrushIDColor(BUFFER_HEIGHT,(0,0,0,self.painter.brushAlpha))
             self.color_info['text']='%.2f'%self.tempAlpha
             self.painter.brushes[BUFFER_HEIGHT].setShaderInput('use_map', 0.0)
         if mode==HEIGHT_MODE_LEVEL:
@@ -1036,6 +1037,7 @@ class Editor (DirectObject):
             self.tempAlpha=self.painter.brushAlpha
             self.painter.brushAlpha=1
             self.painter.brushes[BUFFER_HEIGHT].setColor(self.tempColor,self.tempColor,self.tempColor,1)
+            self.painter.setBrushIDColor(BUFFER_HEIGHT,(self.tempColor,self.tempColor,self.tempColor,1))
             self.color_info['text']='%.2f'%self.tempColor
             self.painter.brushes[BUFFER_HEIGHT].setShaderInput('use_map', 0.0)
         if mode==HEIGHT_MODE_BLUR:
@@ -1043,7 +1045,7 @@ class Editor (DirectObject):
             self.tempColor=self.painter.brushAlpha
             self.tempAlpha=self.painter.brushAlpha
             self.painter.brushAlpha=1
-            self.painter.brushes[BUFFER_HEIGHT].setColor(self.tempColor,self.tempColor,self.tempColor,1)
+            self.painter.setBrushIDColor(BUFFER_HEIGHT,(self.tempColor,self.tempColor,self.tempColor,1))
             self.color_info['text']='%.2f'%self.tempColor    
         self.gui.grayOutButtons(self.heightmode_toolbar_id, (0,4), mode)
         self.height_mode=mode
@@ -1552,7 +1554,7 @@ class Editor (DirectObject):
                 self.color_info['text']='%.2f'%self.painter.brushAlpha
             self.gui.grayOutButtons(self.statusbar, (4,9), 4)
             self.painter.brushes[BUFFER_HEIGHT].show()
-            self.painter.brushes[BUFFER_HEIGHT].setColor(self.tempColor, self.tempColor, self.tempColor, self.painter.brushAlpha)
+            self.painter.setBrushIDColor(BUFFER_HEIGHT,(self.tempColor,self.tempColor,self.tempColor,self.painter.brushAlpha))
             self.painter.brushes[BUFFER_ATR].hide()
             self.painter.brushes[BUFFER_ATR2].hide()
             self.painter.brushes[BUFFER_GRASS].hide()
@@ -1786,8 +1788,8 @@ class Editor (DirectObject):
             self.size_info['text']='%.2f'%self.painter.brushSize
         if self.keyMap['alpha_up']:
             if self.mode==MODE_HEIGHT and self.height_mode==HEIGHT_MODE_LEVEL:
-                self.tempColor=min(1.0, max(0.0, self.tempColor+0.01))
-                self.painter.brushes[BUFFER_HEIGHT].setColor(self.tempColor,self.tempColor,self.tempColor,1)
+                self.tempColor=min(1.0, max(0.0, self.tempColor+0.01))                
+                self.painter.setBrushIDColor(BUFFER_HEIGHT,(self.tempColor,self.tempColor,self.tempColor,1))
                 self.color_info['text']='%.2f'%self.tempColor
             else:
                 self.painter.adjustBrushAlpha(0.01)
@@ -1795,7 +1797,7 @@ class Editor (DirectObject):
         if self.keyMap['alpha_down']:
             if self.mode==MODE_HEIGHT and  self.height_mode==HEIGHT_MODE_LEVEL:
                 self.tempColor=min(1.0, max(0.0, self.tempColor-0.01))
-                self.painter.brushes[BUFFER_HEIGHT].setColor(self.tempColor,self.tempColor,self.tempColor,1)
+                self.painter.setBrushIDColor(BUFFER_HEIGHT,(self.tempColor,self.tempColor,self.tempColor,1))
                 self.color_info['text']='%.2f'%self.tempColor
             else:
                 self.painter.adjustBrushAlpha(-0.01)
@@ -1827,11 +1829,11 @@ class Editor (DirectObject):
                     self.filters[-2].setShaderInput('screen_size', Vec2(float(base.win.getXSize()),float(base.win.getYSize())))
 
     def setAtrMapColor(self, color1, color2, event=None):
-        self.painter.brushes[BUFFER_ATR].setColor(color1[0],color1[1],color1[2],self.painter.brushAlpha)
-        self.painter.brushes[BUFFER_ATR2].setColor(color2[0],color2[1],color2[2],self.painter.brushAlpha)
+        self.painter.setBrushIDColor(BUFFER_ATR,(color1[0],color1[1],color1[2],self.painter.brushAlpha))
+        self.painter.setBrushIDColor(BUFFER_ATR2,(color2[0],color2[1],color2[2],self.painter.brushAlpha))        
 
     def setGrassMapColor(self, color, event=None):
-        self.painter.brushes[BUFFER_GRASS].setColor(color[0],color[1],color[2],self.painter.brushAlpha)
+        self.painter.setBrushIDColor(BUFFER_GRASS,(color2[0],color2[1],color2[2],self.painter.brushAlpha))
 
 if __name__ == "__main__":
     app=Editor()

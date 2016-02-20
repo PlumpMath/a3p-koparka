@@ -1,4 +1,4 @@
-dm	test1	Test1 [2v2]
+dm	test1	Hex test [2v2]
 dm	koparka	koparka [2v2]
 dm	impact	Impact [2v2]
 dm	sectorx	Sector X [2v2]

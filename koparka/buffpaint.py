@@ -119,6 +119,7 @@ class BufferPainter ():
         self.brushes[-1].setTransparency(TransparencyAttrib.MAlpha)        
         self.brushes[-1].setLightOff()
         self.brushes[-1].setColor(1, 1, 1, 0.05) 
+        self.brushes[-1].setShaderInput("brush_color",self.brushes[-1].getColor())
         if brush_shader:           
             self.brushes[-1].setShader(brush_shader)
             self.brushes[-1].setShaderInput('map', self.textures[-1])
@@ -144,6 +145,7 @@ class BufferPainter ():
         for brush in self.brushes:
             color=brush.getColor()              
             brush.setColor(color[0],color[1],color[2], new_alpha)
+            brush.setShaderInput("brush_color",brush.getColor())
             
     def adjustBrushAlpha(self, alpha):                
         new_alpha=min(1.0, max(0.0, self.brushAlpha+alpha))           
@@ -151,7 +153,8 @@ class BufferPainter ():
         for brush in self.brushes:
             color=brush.getColor()              
             brush.setColor(color[0],color[1],color[2], new_alpha)
-    
+            brush.setShaderInput("brush_color",brush.getColor())
+            
     def hideBrushes(self):          
         for brush in self.brushes:            
             brush.hide()
@@ -160,6 +163,19 @@ class BufferPainter ():
         for brush in self.brushes:
             alpha=brush.getColor()
             brush.setColor(color[0],color[1],color[2], alpha[3])
+            brush.setShaderInput("brush_color",brush.getColor())
+    
+    def setBrushIDColor(self, id, color):
+        brush=self.brushes[id]
+        alpha=brush.getColor()
+        brush.setColor(color[0],color[1],color[2], alpha[3])
+        brush.setShaderInput("brush_color",brush.getColor())
+    
+    def setBrushIDAlpha(self, id, new_alpha):
+        brush=self.brushes[id]
+        color=brush.getColor()              
+        brush.setColor(color[0],color[1],color[2], new_alpha)
+        brush.setShaderInput("brush_color",brush.getColor())
             
     def setBrushTex(self, id):
         for brush in self.brushes:            
