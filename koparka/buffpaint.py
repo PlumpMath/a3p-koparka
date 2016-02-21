@@ -165,10 +165,13 @@ class BufferPainter ():
             brush.setColor(color[0],color[1],color[2], alpha[3])
             brush.setShaderInput("brush_color",brush.getColor())
     
-    def setBrushIDColor(self, id, color):
+    def setBrushIDColor(self, id, color, keep_alpha=True):
         brush=self.brushes[id]
-        alpha=brush.getColor()
-        brush.setColor(color[0],color[1],color[2], alpha[3])
+        if keep_alpha:
+            alpha=brush.getColor()[3]
+        else:
+            alpha=color[3]    
+        brush.setColor(color[0],color[1],color[2], alpha)
         brush.setShaderInput("brush_color",brush.getColor())
     
     def setBrushIDAlpha(self, id, new_alpha):

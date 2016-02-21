@@ -40,7 +40,7 @@ koparka-collision-dir models_collision/
 #default data
 koparka-default-height-map data/def_height.png
 koparka-default-attribute-map data/atr_def.png
-koparka-default-terrain-mesh data/mesh4k.egg
+koparka-default-terrain-mesh data/mesh_hex_3k.egg
 #koparka-default-terrain-mesh data/big_mesh.egg
 koparka-default-skydome-mesh data/skydome2
 koparka-default-water-mesh data/waterplane

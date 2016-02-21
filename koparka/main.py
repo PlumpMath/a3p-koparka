@@ -108,16 +108,19 @@ class Editor (DirectObject):
         #make a grid
         cm = CardMaker("plane")
         cm.setFrame(0, 512, 0, 512)
-        self.grid=render.attachNewNode(cm.generate())
-        self.grid.lookAt(0, 0, -1)
-        self.grid.setTexture(loader.loadTexture('data/grid.png'))
-        self.grid.setTransparency(TransparencyAttrib.MDual)
-        self.grid.setTexScale(TextureStage.getDefault(), 16, 16, 1)
+        
+        self.grid=loader.loadModel("data/hex_grid")
+        self.grid.reparentTo(render)
+        #self.grid=render.attachNewNode(cm.generate())
+        #self.grid.lookAt(0, 0, -1)
+        #self.grid.setTexture(loader.loadTexture('data/hex_grid.png'))
+        #self.grid.setTransparency(TransparencyAttrib.MDual)
+        #self.grid.setTexScale(TextureStage.getDefault(), 1, 1, 1)
         self.grid.setZ(25.5)
         self.grid.setLightOff()
-        self.grid.setColor(0,0,0,0.5)
+        #self.grid.setColor(0,0,0,0.5)
         self.grid_z=25.5
-        self.grid_scale=16
+        self.grid_scale=1
         self.grid.hide(MASK_WATER)
         self.grid.hide(MASK_SHADOW)
         #self.grid.hide()
@@ -1022,30 +1025,29 @@ class Editor (DirectObject):
             mode=HEIGHT_MODE_UP
         if mode==HEIGHT_MODE_UP:
             self.tempColor=1
-            self.painter.brushAlpha=self.tempAlpha            
-            self.painter.setBrushIDColor(BUFFER_HEIGHT,(1,1,1,self.painter.brushAlpha))
-            self.color_info['text']='%.2f'%self.tempAlpha
+            self.painter.brushAlpha=0.05
+            self.painter.setBrushIDColor(BUFFER_HEIGHT,(1,1,1,0.5), False)
+            self.color_info['text']='%.2f'%0.05
             self.painter.brushes[BUFFER_HEIGHT].setShaderInput('use_map', 0.0)
         if mode==HEIGHT_MODE_DOWN:
             self.tempColor=0
-            self.painter.brushAlpha=self.tempAlpha            
-            self.painter.setBrushIDColor(BUFFER_HEIGHT,(0,0,0,self.painter.brushAlpha))
-            self.color_info['text']='%.2f'%self.tempAlpha
+            self.painter.brushAlpha=0.05           
+            self.painter.setBrushIDColor(BUFFER_HEIGHT,(0,0,0,0.05), False)
+            self.color_info['text']='%.2f'%0.05
             self.painter.brushes[BUFFER_HEIGHT].setShaderInput('use_map', 0.0)
         if mode==HEIGHT_MODE_LEVEL:
             self.tempColor=self.painter.brushAlpha
             self.tempAlpha=self.painter.brushAlpha
-            self.painter.brushAlpha=1
-            self.painter.brushes[BUFFER_HEIGHT].setColor(self.tempColor,self.tempColor,self.tempColor,1)
-            self.painter.setBrushIDColor(BUFFER_HEIGHT,(self.tempColor,self.tempColor,self.tempColor,1))
-            self.color_info['text']='%.2f'%self.tempColor
+            self.painter.brushAlpha=0.25            
+            self.painter.setBrushIDColor(BUFFER_HEIGHT,(self.tempColor,self.tempColor,self.tempColor,0.25), False)
+            self.color_info['text']='%.2f'%0.25
             self.painter.brushes[BUFFER_HEIGHT].setShaderInput('use_map', 0.0)
         if mode==HEIGHT_MODE_BLUR:
             self.painter.brushes[BUFFER_HEIGHT].setShaderInput('use_map', 1.0)
             self.tempColor=self.painter.brushAlpha
             self.tempAlpha=self.painter.brushAlpha
-            self.painter.brushAlpha=1
-            self.painter.setBrushIDColor(BUFFER_HEIGHT,(self.tempColor,self.tempColor,self.tempColor,1))
+            self.painter.brushAlpha=1            
+            self.painter.setBrushIDColor(BUFFER_HEIGHT,(self.tempColor,self.tempColor,self.tempColor,1), False)
             self.color_info['text']='%.2f'%self.tempColor    
         self.gui.grayOutButtons(self.heightmode_toolbar_id, (0,4), mode)
         self.height_mode=mode
@@ -1833,7 +1835,7 @@ class Editor (DirectObject):
         self.painter.setBrushIDColor(BUFFER_ATR2,(color2[0],color2[1],color2[2],self.painter.brushAlpha))        
 
     def setGrassMapColor(self, color, event=None):
-        self.painter.setBrushIDColor(BUFFER_GRASS,(color2[0],color2[1],color2[2],self.painter.brushAlpha))
+        self.painter.setBrushIDColor(BUFFER_GRASS,(color[0],color[1],color[2],self.painter.brushAlpha))
 
 if __name__ == "__main__":
     app=Editor()
