@@ -5,10 +5,10 @@ dock 1 80.0 -60.0 0.0
 dock 2 80.0 110.0 0.0
 dock 3 90.0 -110.0 0.0
 teams 2 2
-geometry-scenery hex_grid.bam 0.0 0.0 0.0
+geometry-scenery hex_grid.bam 0.0 0.0 0.0 terrain_v.glsl terrain_f.glsl height_map 'hex_test_n.png' test 15.9
 skybox skybox1/skybox
 light all ambient AmbientLight 0.300000011921 0.300000011921 0.300000011921
-light all directional Light1 0.800000011921 0.699999988079 0.600000023842 0.0 -120.0 0.0 shadow
+light all directional Light1 0.600000011921 0.499999988079 0.400000023842 0.0 -120.0 0.0 shadow
 spawnpoint -90.0 -80.0 0.0 0.0 0.0 0.0
 spawnpoint 80.0 -60.0 0.0 0.0 0.0 0.0
 spawnpoint -90.0 100.0 0.0 0.0 0.0 0.0

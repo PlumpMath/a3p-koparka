@@ -7,6 +7,8 @@ import audio
 import particles
 import traceback
 
+from lightmanager import LightManager
+
 from direct.showbase.DirectObject import DirectObject
 from panda3d.core import *
 from panda3d.bullet import *
@@ -23,12 +25,14 @@ import time
 import math
 import os
 from random import uniform
+import ast
 
 clock = None # Global clock
 renderLit = None # Parent nodepath for all objects that are affected by lights
 renderObjects = None # Parent nodepath for dynamic objects
 renderEnvironment = None # Parent nodepath for environment geometry
 lights = [] # List of all light objects
+light_manager=LightManager(max_lights=20, ambient=(0.0, 0.0, 0.0))
 lightNodes = [] # List of tuples containing lights and their nodepaths, respectively
 cubeMap = None # Cubemap for all environment mapping
 reflectionBuffer = None # Frame buffer for reflection effects
@@ -531,6 +535,26 @@ class Map(DirectObject):
                 geom.setPosition(Vec3(float(tokens[2]), float(tokens[3]), float(tokens[4])))
                 geom.commitChanges()
                 geom.node.show()
+                if len(tokens)>=7:
+                    print len(tokens)
+                    geom.setShader(tokens[5], tokens[6])
+                if len(tokens)>=9:
+                        input_names=tokens[7:][::2]
+                        input_values=tokens[8:][::2]
+                        print 'input_names',input_names                        
+                        values=[]
+                        for val in input_values:
+                            v=ast.literal_eval(val)
+                            if isinstance(v, basestring): #strings here point to textures
+                                v=loader.loadTexture(mapDirectory+'/'+v)
+                                v.set_wrap_u(Texture.WMRepeat)
+                                v.set_wrap_v(Texture.WMRepeat)
+                                v.set_magfilter(Texture.FTLinearMipmapLinear)
+                                v.set_minfilter(Texture.FTLinearMipmapLinear)
+                            values.append(v)
+                        print 'values',values   
+                        for name, value in dict(zip(input_names, values)).iteritems():
+                            geom.setShaderInput(name, value)
                 self.addStaticGeometry(geom)
             elif tokens[0] == "skybox":
                 if not isDaemon:
@@ -578,12 +602,14 @@ class Map(DirectObject):
                         lightNode.setTag("shadow", "false")
                     parentNode.setLight(lightNode)
                     self.lights.append(lightNode)
+                    light_manager.directionalLight(lightNode.getHpr(), light.getColor())                    
                 elif tokens[2] == "ambient":
                     light = AmbientLight(tokens[3])
                     light.setColor(Vec4(float(tokens[4]), float(tokens[5]), float(tokens[6]), 1))
                     lightNode = parentNode.attachNewNode(light)
                     parentNode.setLight(lightNode)
                     self.lights.append(lightNode)
+                    light_manager.ambientLight(Vec3(float(tokens[4]), float(tokens[5]), float(tokens[6])))
                 elif tokens[2] == "point":
                     light = PointLight(tokens[3])
                     light.setColor(Vec4(float(tokens[7]), float(tokens[8]), float(tokens[9]), 1))
@@ -818,7 +844,18 @@ class StaticGeometry(DirectObject):
         #self.geometry.setCollideBits(BitMask32(0x00000001))
         #self.geometry.setCategoryBits(BitMask32(0x00000001))
         #space.setSurfaceType(self.geometry, 0)
-    
+        
+    def setShader(self, v_shader, f_shader, shader_inputs={}): 
+        print "loading shaders: "+v_shader, f_shader    
+        shader=Shader.load(Shader.SL_GLSL, 'shaders/'+v_shader, 'shaders/'+f_shader)
+        self.node.setShader(shader)            
+        for key, value in shader_inputs.items():
+            self.node.setShaderInput(key, value)
+            print 'shader input: ', key, value
+            
+    def setShaderInput(self, key, value):
+            self.node.setShaderInput(key, value)
+                 
     def setPosition(self, pos):
         self.geometry.setPos(pos)
         self.node.setPos(pos)
@@ -1031,25 +1068,33 @@ class Mouse:
 class Light:
     """At this time, only point lights are supported. Really though, what do you need a spotlight for?
     This class is necessary because every time a Panda3D light is added, all shaders must be regenerated.
-    This class keeps a constant number of lights active at all times, but sets the unnecessary extra lights to have no effect."""
+    This class keeps a constant number of lights active at all times, but sets the unnecessary extra lights to have no effect.
+    wezu: hacked to also set shader inputs for world space lights"""
     def __init__(self, color, attenuation):
         self.color = Vec4(color)
         self.attenuation = Vec3(attenuation)
         self.position = Vec3(0, 0, 0)
         self.node = None
+        self.id = None
     def setPos(self, pos):
         self.position = Vec3(pos)
         if self.node != None:
             self.node[1].setPos(self.position)
+        if self.id:
+            light_manager.moveLight(self.id, self.position)    
     def setColor(self, color):
         self.color = Vec4(color)
         if self.node != None:
             self.node[0].setColor(self.color)
+        if self.id:
+            light_manager.setColor(self.id, self.color)    
     def setAttenuation(self, attenuation):
         "Attenuation is a 3D vector containing quadratic, linear, and constant attenuation coefficients."
         self.attenuation = Vec3(attenuation)
         if self.node != None:
             self.node[0].setAttenuation(self.attenuation)
+        if self.id:
+            light_manager.setAttenuation(self.id, self.attenuation)    
     def add(self):
         "Adds this light to the active light list, basically enabling it."
         if not self in lights:
@@ -1059,6 +1104,9 @@ class Light:
                 self.node[1].setPos(self.position)
                 self.node[0].setColor(self.color)
                 self.node[0].setAttenuation(self.attenuation)
+                #world space light
+                print 'adding light'
+                self.id=light_manager.addLight(self.position, self.color, self.attenuation)
     def remove(self):
         "Removes this light from the active light list, disabling it."
         if self in lights:
@@ -1067,7 +1115,9 @@ class Light:
             self.node[0].setColor(Vec4(0, 0, 0, 1))
             self.node[0].setAttenuation(Vec3(0, 0, 1))
         self.node = None
-
+        if self.id:
+            light_manager.removeLight(self.id)
+            
 def impulseToForce(fx, fy = None, fz = None):
     "Converts an impulse to a force (either a vector or a scalar) by dividing by the timestep of the last ODE frame."
     if fy != None and fz != None:
