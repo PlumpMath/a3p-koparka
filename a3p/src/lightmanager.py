@@ -46,9 +46,9 @@ class LightManager():
                 light_pos.pushBack(UnalignedLVecBase4f(light[0], light[1], light[2], 0.0))
                 light_color.pushBack(UnalignedLVecBase4f(light[3], light[4], light[5], light[6]))
                 light_att.pushBack(UnalignedLVecBase4f(light[7], light[8], light[9], 0.0))
-                print num_lights, 'light pos: ',(light[0], light[1], light[2], 0.0)
-                print num_lights, 'light color: ',(light[3], light[4], light[5], light[6])
-                print num_lights, 'light att: ',(light[7], light[9], light[9], 0.0)
+                #print num_lights, 'light pos: ',(light[0], light[1], light[2], 0.0)
+                #print num_lights, 'light color: ',(light[3], light[4], light[5], light[6])
+                #print num_lights, 'light att: ',(light[7], light[9], light[9], 0.0)
                 num_lights+=1
         for i in range(self.max_lights-num_lights):
             light_pos.pushBack(UnalignedLVecBase4f(0.0,0.0,0.0,0.0))            

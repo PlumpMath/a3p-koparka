@@ -387,6 +387,7 @@ class Map(DirectObject):
         self.staticGeometries = dict()
         self.worldSize = 0
         self.lights = []
+        self.point_lights=[]#we need to also track lights for the shaders to remove them later
         self.waterNode = None
         self.waterPlane = None
         self.waterPlaneNode = None
@@ -586,8 +587,10 @@ class Map(DirectObject):
                     light = Spotlight(tokens[3])
                     lens = PerspectiveLens()
                     lens.setFov(45)
+                    lens.setNearFar(200,600)
                     light.setExponent(0) 
                     light.setLens(lens)
+                    #light.showFrustum()
                     light.setColor(Vec4(float(tokens[4]), float(tokens[5]), float(tokens[6]), 1))
                     lightNode = parentNode.attachNewNode(light)
                     lightNode.setTag("type", "directional") # We can look this up later when we go to save, to differentiate between spotlights and directionals
@@ -598,6 +601,8 @@ class Map(DirectObject):
                         if enableShadows:
                             light.setShadowCaster(True, shadowMapWidth, shadowMapHeight)
                             light.setCameraMask(BitMask32.bit(4))
+                            #we need to get the depth map for the shaders
+                            render.setShaderInput("shadow_caster", lightNode)
                     else:
                         lightNode.setTag("shadow", "false")
                     parentNode.setLight(lightNode)
@@ -618,6 +623,9 @@ class Map(DirectObject):
                     lightNode.setPos(float(tokens[4]), float(tokens[5]), float(tokens[6]))
                     parentNode.setLight(lightNode)
                     self.lights.append(lightNode)
+                    #lights for shaders
+                    light_id=light_manager.addLight(lightNode.getPos(render), light.getColor(), light.getAttenuation())
+                    self.point_lights.append(light_id)
                 elif tokens[2] == "spot":
                     light = Spotlight(tokens[3])
                     lens = PerspectiveLens()
@@ -813,7 +821,10 @@ class Map(DirectObject):
         if self.ambientSound != None:
             self.ambientSound.stop()
             del self.ambientSound
-
+        for light_id in self.point_lights:
+            light_manager.removeLight(light_id)
+        del self.point_lights[:]    
+        
 class StaticGeometry(DirectObject):
     "A StaticGeometry is a potentially invisible, immovable physics object, modeled as a trimesh."
     def __init__(self, world, worldNP, directory, filename=None):
