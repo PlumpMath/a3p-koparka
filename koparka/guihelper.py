@@ -771,7 +771,7 @@ class GuiHelper():
     def addPropPanel(self):   
         mainFrame=DirectFrame( frameSize=_rec2d(192,256),
                         frameColor=(0, 0, 0, 0.8),  
-                        text=" GRID SNAP:\n\n         PROPERTIES:",
+                        text=" Z SNAP:\n\n         PROPERTIES:",
                         text_align=TextNode.ALeft,
                         text_scale=16,
                         text_pos=(-192,240),
@@ -799,12 +799,12 @@ class GuiHelper():
         #frame.setX(frame, 16)
         snap = DirectEntry(frameSize=_rec2d(80,18),
                         frameColor=(1,1,1, 0.4),
-                        text ="16",
+                        text ="0",
                         text_scale=16,
                         text_pos=(-80,6),
                         text_align=TextNode.ALeft,
                         text_fg=(1,1,1,1),
-                        initialText="16",
+                        initialText="0",
                         width=5,
                         focus=0,
                         suppressKeys=True,

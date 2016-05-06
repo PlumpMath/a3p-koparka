@@ -5,6 +5,7 @@ from sqliteloader import loadModel
 from direct.stdpy.file import listdir, exists, open
 import json
 from vfx_loader import createEffect
+from hexlogic import *
 
 class ObjectPainter():
     def __init__(self, lightManager): 
@@ -33,6 +34,8 @@ class ObjectPainter():
         self.hit_pos=(0,0,0)
         self.actors=[]
         self.particles=[]
+        
+        self.base_z=None
         
         self.tiles={}
         
@@ -104,7 +107,7 @@ class ObjectPainter():
         #    self.currentObject.setHpr(self.currentHPR[0],self.currentHPR[1],self.currentHPR[2])        
         return axis+'%.1f'%self.currentHPR[i]    
         
-    def adjustHpr(self, amount, axis):
+    def adjustHpr(self, amount, axis='H: '):
         if axis=='H: ':
             i=0
         elif axis=='P: ':
@@ -114,8 +117,8 @@ class ObjectPainter():
         new=self.currentHPR[i]+amount
         self.currentHPR[i]=new 
         self.normalizeHPR()
-        #if self.currentObject!=None:
-        #    self.currentObject.setHpr(self.currentHPR[0],self.currentHPR[1],self.currentHPR[2])        
+        if self.currentObject!=None:
+            self.currentObject.setHpr(self.currentHPR[0],self.currentHPR[1],self.currentHPR[2])        
         return axis+'%.1f'%self.currentHPR[i]
     
     def setScale(self, slider=None, amount=None):
@@ -257,13 +260,13 @@ class ObjectPainter():
             self.currentWall.wrtReparentTo(best_node)
             self.currentWall.setPythonTag('props', props)
         elif self.currentObject:
-            x=int((self.currentObject.getX(render)/32.0)+0.5)
-            y=int((self.currentObject.getY(render)/32.0)+0.5)
-            print x, y
+            if not self.base_z:
+                self.base_z=self.currentObject.getZ(render)
+            hex_pos=point2Hex(self.currentObject.getPos(render))  
             best_node = min(self.quadtree, key=lambda n: n.getDistance(self.currentObject))
             self.currentObject.setPythonTag('props', props)
             self.currentObject.wrtReparentTo(best_node) 
-            self.tiles[(x,y)]=self.currentObject                    
+            self.tiles[hex_pos]=self.currentObject                    
             next=self.currentObject.find('**/next')  
             if next:
                 self.hit_pos = next.getPos(render)
@@ -309,19 +312,22 @@ class ObjectPainter():
             snap=float(snap)
         else:
             snap=0.0    
-        if painter:             
-            self.hit_pos=painter.brushes[0].getPos()
-            self.hit_pos[0]=snap*round(self.hit_pos[0]/snap)
-            self.hit_pos[1]=snap*round(self.hit_pos[1]/snap)
-            x = int(self.hit_pos[0])
-            y = int(self.hit_pos[1])
-            if x==512: x=511
-            elif x==0: x=1    
-            if y==512: y=511
-            elif y==0: y=1
-            #painter.images[0] is the last known heightmap
-            z=painter.images[0].getBright(x,512-y)*100.0
-            if self.currentObject:                
+        if painter:
+            hex_pos=point2Hex(painter.brushes[0].getPos())             
+            self.hit_pos=hex2Point(hex_pos)   
+            if self.base_z and snap != 0:
+                z=self.base_z+snap
+            else:             
+                x = int(self.hit_pos[0])
+                y = int(self.hit_pos[1])
+                if x==512: x=511
+                elif x==0: x=1    
+                if y==512: y=511
+                elif y==0: y=1
+                #painter.images[0] is the last known heightmap
+                z=painter.images[0].getBright(x,512-y)*100.0
+            self.hit_pos.z=z
+            if self.currentObject:     
                 self.currentObject.setPos(self.hit_pos)
                 if self.isLocked == False:
                     self.currentObject.setZ(z+self.currentZ)
