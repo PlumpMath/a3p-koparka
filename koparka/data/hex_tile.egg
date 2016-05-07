@@ -1,0 +1,52 @@
+<CoordinateSystem> { Z-Up }
+  <Group> Object001 {
+    <VertexPool> Object001.verts {
+      <Vertex> 0 {
+        0 0 0        
+        <Normal> { 0 0 1 }
+      }
+      <Vertex> 1 {
+        12 0 0
+        <Normal> { 0 0 1 }
+      }
+      <Vertex> 2 {
+        6 10.3923053741455 0
+        <Normal> { 0 0 1 }
+      }
+      <Vertex> 3 {
+        -6 10.3923044204712 0
+        <Normal> { 0 0 1 }
+      }
+      <Vertex> 4 {
+        -12 -1.04907337572513e-006 0
+        <Normal> { 0 0 1 }
+      }
+      <Vertex> 5 {
+        -6 -10.3923053741455 0
+        <Normal> { 0 0 1 }
+      }
+      <Vertex> 6 {
+        6 -10.3923053741455 0
+        <Normal> { 0 0 1 }
+      }
+    }
+    <Polygon> {
+      <VertexRef> { 0 1 2 <Ref> { Object001.verts } }
+    }
+    <Polygon> {
+      <VertexRef> { 0 2 3 <Ref> { Object001.verts } }
+    }
+    <Polygon> {
+      <VertexRef> { 0 3 4 <Ref> { Object001.verts } }
+    }
+    <Polygon> {
+      <VertexRef> { 0 4 5 <Ref> { Object001.verts } }
+    }
+    <Polygon> {
+      <VertexRef> { 0 5 6 <Ref> { Object001.verts } }
+    }
+    <Polygon> {
+      <VertexRef> { 0 6 1 <Ref> { Object001.verts } }
+    }
+  }
+

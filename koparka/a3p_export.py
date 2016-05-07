@@ -14,33 +14,37 @@ def imgToDict(image):
             d[(x+1,max_y-y)]=v
     return d
     
-def getHeightmapZ(heightmap, x, y, scale=100.0):    
+def getHeightmapZ(heightmap, x, y, scale=100.0): 
+    #print 'height map', x, y   
     max_x=heightmap.getReadXSize()
     max_y=heightmap.getReadYSize()    
     img_x, img_y = int(x), int(y)
-    if img_x==max_x:
-        img_x=max_x-1
-    elif img_x==0:
-        img_x=1    
-    if img_y==max_y:
-        img_y=max_y-1
-    elif img_y==0:
-        img_y=1    
+    if img_x>=max_x: img_x=max_x-1
+    elif img_x<=0:   img_x=1    
+    if img_y>=max_y: img_y=max_y-1
+    elif img_y<=0:   img_y=1   
     return heightmap.getBright(img_x,512-img_y)*scale
+       
 
-def deformTile(tile, heightmap, x, y, extra_vertex=[]):
-    z=tile.getZ(render)
-    valid_vertex=[
-                Point3(0, 32, 0),
-                Point3(0, 0, 0),
-                Point3(32, 0, 0),
-                Point3(32, 32, 0)
-                ]
-    valid_vertex=valid_vertex+extra_vertex
-    
+def getDeformableVertexList(tile):
+    valid_vertex=[]
     geomNodeCollection = tile.findAllMatches('**/+GeomNode')
     for nodePath in geomNodeCollection:
         geomNode = nodePath.node()
+        geom = geomNode.modifyGeom(0)
+        vdata = geom.modifyVertexData()
+        vertexReWriter = GeomVertexRewriter(vdata, 'vertex')  
+        while not vertexReWriter.isAtEnd():
+            v = vertexReWriter.getData3f()
+            valid_vertex.append(v)
+    return valid_vertex
+            
+def deformTile(tile, heightmap,valid_vertex):        
+    pos=tile.getPos(render)
+    geomNodeCollection = tile.findAllMatches('**/+GeomNode')
+    for nodePath in geomNodeCollection:
+        geomNode = nodePath.node()
+        geomNode.decompose()
         geom = geomNode.modifyGeom(0)
         vdata = geom.modifyVertexData()
         vertexReWriter = GeomVertexRewriter(vdata, 'vertex')  
@@ -51,40 +55,45 @@ def deformTile(tile, heightmap, x, y, extra_vertex=[]):
                 # we need to move the row back 
                 vertexReWriter.setRow(vertexReWriter.getReadRow() - 1)
                 #get the new z
-                new_vert_z=getHeightmapZ(heightmap, (x-1)*32+v[0], (y-1)*32+v[1])-z
+                new_vert_z=getHeightmapZ(heightmap, pos.x+v.x, pos.y+v.y)-pos.z              
                 #write it!
                 vertexReWriter.setData3f(v[0],v[1], new_vert_z)
 
 
 def generateNavmesh(tiles, navmap, heightmap, out_file, default_tile):
-    print "Baking navmesh:",
+    print "Baking navmesh:"
     navmesh=NodePath("navmesh_root")
     nav_dict=imgToDict(navmap)
-    for x in range(1, 17):
-        for y in range(1, 17):            
-            if nav_dict[(x,y)]:            
-                print ".",
-                if (x,y) in tiles:  
-                    terrain_geom=tiles[(x,y)].find('**/navmesh_terrain') 
-                    if terrain_geom:        
-                        t=terrain_geom.copyTo(navmesh)
-                        t.show()
-                        t.setPos(tiles[(x,y)].getPos(render))
-                        deformTile(t, heightmap, x, y)
-                    else:    
-                        terrain_geom=default_tile.copyTo(navmesh)
-                        terrain_geom.setPos((x-1)*32, (y-1)*32, 0.0)
-                        deformTile(terrain_geom, heightmap, x, y)
-                        
-                    tile_geom=tiles[(x,y)].find('**/navmesh_tile')
-                    if tile_geom:
-                        t=tile_geom.copyTo(navmesh)
-                        t.show()
-                        t.setPos(tiles[(x,y)].getPos(render))
-                else:
+    valid_vertex=getDeformableVertexList(default_tile)
+    
+    for x in range(29):
+        for y in range(25):            
+            hex_y=y-x/2 
+            hex_x=x
+            #print hex_x, hex_y
+            if (x,y) in tiles: 
+                print 'custom tile'
+                '''terrain_geom=tiles[(x,y)].find('**/navmesh_terrain') 
+                if terrain_geom:        
+                    t=terrain_geom.copyTo(navmesh)
+                    t.show()
+                    t.setPos(tiles[(x,y)].getPos(render))
+                    deformTile(t, heightmap, x, y, valid_vertex)
+                else:    
                     terrain_geom=default_tile.copyTo(navmesh)
                     terrain_geom.setPos((x-1)*32, (y-1)*32, 0.0)
-                    deformTile(terrain_geom, heightmap, x, y, [Point3(16, 16, 0)])
+                    deformTile(terrain_geom, heightmap, x, y, valid_vertex)
+                    
+                tile_geom=tiles[(x,y)].find('**/navmesh_tile')
+                if tile_geom:
+                    t=tile_geom.copyTo(navmesh)
+                    t.show()
+                    t.setPos(tiles[(x,y)].getPos(render))'''                    
+            else:
+                terrain_geom=default_tile.copyTo(navmesh)
+                terrain_geom.setPos(hex2Point((hex_x,hex_y)))
+                deformTile(terrain_geom, heightmap, valid_vertex)
+
     print '\nFlattening nodes...',
     navmesh.setColorOff()
     navmesh.setColorScaleOff()
@@ -107,6 +116,7 @@ def generateCollisionMesh(out_file):
 if __name__ == "__main__":
     from panda3d.core import loadPrcFileData
     loadPrcFileData("", "window-type none") 
+    loadPrcFileData("", "egg-mesh f") 
     from direct.showbase import ShowBase
     base = ShowBase.ShowBase()
     tiles=[]
@@ -114,6 +124,6 @@ if __name__ == "__main__":
     navmap.read('save/d2/navmesh.png')
     heightmap=PNMImage()
     heightmap.read('save/d2/heightmap.png')
-    out_file="test_navmesh.bam"
-    default_tile=loader.loadModel('data/navmesh_tile.egg')
+    out_file="hex_test_navmesh.bam"
+    default_tile=loader.loadModel('data/hex_tile.egg')
     generateNavmesh(tiles, navmap, heightmap, out_file, default_tile)  

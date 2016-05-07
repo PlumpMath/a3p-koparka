@@ -320,14 +320,15 @@ class ObjectPainter():
             else:             
                 x = int(self.hit_pos[0])
                 y = int(self.hit_pos[1])
-                if x==512: x=511
-                elif x==0: x=1    
-                if y==512: y=511
-                elif y==0: y=1
-                #painter.images[0] is the last known heightmap
+                if x>=512: x=511
+                elif x<=0: x=1    
+                if y>=512: y=511
+                elif y<=0: y=1
+                #painter.images[0] is the last known heightmap                
                 z=painter.images[0].getBright(x,512-y)*100.0
             self.hit_pos.z=z
             if self.currentObject:     
+                print hex_pos
                 self.currentObject.setPos(self.hit_pos)
                 if self.isLocked == False:
                     self.currentObject.setZ(z+self.currentZ)

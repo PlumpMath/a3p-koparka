@@ -129,7 +129,7 @@ class PythonNetContext(NetworkContext):
         self.hostConnection.ready = True
         self.clientConnected = False
         self.clientUsername = username
-    
+        
     def listen(self):
         global netMode
         netMode = MODE_SERVER
@@ -154,7 +154,7 @@ class PythonNetContext(NetworkContext):
             except:
                 time.sleep(0.25)
             tries += 1
-    
+        
     def clientConnect(self, username):
         if self.clientConnected:
             return
@@ -163,7 +163,7 @@ class PythonNetContext(NetworkContext):
         datagram.addString(username)
         self.sendDatagram(datagram, self.hostConnection.address)
         self.hostConnection.lastSentPacketTime = timeFunction()
-    
+        
     def serverConnect(self, clientAddress):
         if clientAddress in self.activeConnections:
             return
@@ -172,7 +172,7 @@ class PythonNetContext(NetworkContext):
         p.add(Uint8(PACKET_EMPTY))
         p.addTo(data)
         self.sendDatagram(data, clientAddress)
-    
+        
     def removeClient(self, client):
         if client in self.activeConnections:
             del self.activeConnections[client]
@@ -183,11 +183,11 @@ class PythonNetContext(NetworkContext):
             connection.address = client
             connection.lastSentPacketTime = timeFunction()
             self.activeConnections[client] = connection
-    
+        
     def resetConnectionStatuses(self):
         for connection in self.activeConnections.values():
             connection.ready = False
-    
+        
     def writeTick(self):
         for data in self.writeQueue:
             # data[0] = action code. 0 for broadcast or broadcastExcept. 1 for send.
@@ -218,7 +218,7 @@ class PythonNetContext(NetworkContext):
                         pass
                     c.lastSentPacketTime = timeFunction()
         del self.writeQueue[:]
-
+        
     def readTick(self):
         if self.mode == MODE_SERVER:
             loadingTimeout = self.connectionTimeout * 2
@@ -241,7 +241,6 @@ class PythonNetContext(NetworkContext):
                 else:
                     self.connectionAttempts = 0
                     self.disconnectCallback(self.hostConnection.address)
-    
         readQueue = []
         while True:
             try:

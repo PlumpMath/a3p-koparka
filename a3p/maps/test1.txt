@@ -1,11 +1,11 @@
 world 180.0
-navmesh hex_grid.bam
+navmesh hex_test.bam
 dock 0 -90.0 80.0 0.0
 dock 1 80.0 -60.0 0.0
 dock 2 80.0 110.0 0.0
 dock 3 90.0 -110.0 0.0
 teams 2 2
-geometry-scenery hex_grid.bam 0.0 0.0 0.0 terrain_v.glsl terrain_f.glsl tex_scale 32 height_map 'test1/normalmap.png' atr1 'test1/detail0.png' atr2 'test1/detail1.png' tex0 'terrain_tex/0.dds' tex1 'terrain_tex/1.dds' tex2 'terrain_tex/2.dds' tex3 'terrain_tex/3.dds' tex4 'terrain_tex/4.dds' tex5 'terrain_tex/5.dds' tex0n 'terrain_tex/0n.dds' tex1n 'terrain_tex/1n.dds' tex2n 'terrain_tex/2n.dds' tex3n 'terrain_tex/3n.dds' tex4n 'terrain_tex/4n.dds' tex5n 'terrain_tex/5n.dds'
+geometry-scenery hex_test.bam 0.0 0.0 -50.0 terrain_v.glsl terrain_f.glsl tex_scale 32 height_map 'test1/normalmap.png' atr1 'test1/detail0.png' atr2 'test1/detail1.png' tex0 'terrain_tex/0.dds' tex1 'terrain_tex/1.dds' tex2 'terrain_tex/2.dds' tex3 'terrain_tex/3.dds' tex4 'terrain_tex/4.dds' tex5 'terrain_tex/5.dds' tex0n 'terrain_tex/0n.dds' tex1n 'terrain_tex/1n.dds' tex2n 'terrain_tex/2n.dds' tex3n 'terrain_tex/3n.dds' tex4n 'terrain_tex/4n.dds' tex5n 'terrain_tex/5n.dds'
 skybox skybox1/skybox
 light all ambient AmbientLight 0.300000011921 0.300000011921 0.300000011921
 light all directional Light1 0.600000011921 0.499999988079 0.400000023842 0.0 -120.0 0.0 shadow

@@ -75,14 +75,19 @@ class Logger:
         self.notify = DirectNotify().newCategory("core")
     def error(self, msg):
         self.notify.warning(msg)
+        print 'error', msg
     def warning(self, msg):
         self.notify.warning(msg)
+        print 'warning', msg
     def info(self, msg):
         self.notify.info(msg)
+        print 'info', msg
     def debug(self, msg):
         self.notify.debug(msg)
+        print 'debug', msg
     def exception(self, msg):
-        self.notify.error(msg)
+        self.notify.error(msg)        
+        print 'exception', msg
 
 def togglePause():
     global paused
@@ -1080,7 +1085,7 @@ class Light:
     """At this time, only point lights are supported. Really though, what do you need a spotlight for?
     This class is necessary because every time a Panda3D light is added, all shaders must be regenerated.
     This class keeps a constant number of lights active at all times, but sets the unnecessary extra lights to have no effect.
-    wezu: hacked to also set shader inputs for world space lights"""
+    wezu: hacked to also set shader inputs for world space lights - but it looks as if this in not used at all :("""
     def __init__(self, color, attenuation):
         self.color = Vec4(color)
         self.attenuation = Vec3(attenuation)

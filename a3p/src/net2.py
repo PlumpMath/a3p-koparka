@@ -140,7 +140,7 @@ class NetManager(DirectObject):
         self.totalOutgoingPacketSize = 0
         self.requestedEntitySpawns = dict()
         self.lastCheckSumSent = 0
-        self.accept("chat-outgoing", self.chatHandler)
+        #self.accept("chat-outgoing", self.chatHandler)
     
     def spawnEntity(self, entity):
         p = entity.controller.buildSpawnPacket()

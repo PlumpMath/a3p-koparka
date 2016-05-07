@@ -246,7 +246,7 @@ class TeamEntityController(Controller):
             self.respawns.remove(purchase)
         return p
     
-    def clientUpdate(self, aiWorld, entityGroup, data = None):
+    def clientUpdate(self, aiWorld, entityGroup, data = None):       
         Controller.clientUpdate(self, aiWorld, entityGroup, data)
         if data != None:
             self.entity.score = net.Int16.getFrom(data)

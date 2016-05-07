@@ -58,7 +58,7 @@ class Backend(DirectObject):
     def setGame(self, game):
         self.game = game
 
-    def update(self):
+    def update(self):        
         if self.active:
             if engine.clock.time - self.lastGc > 10:
                 gc.collect()
