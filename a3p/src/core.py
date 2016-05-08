@@ -306,14 +306,24 @@ class PointControlBackend(ServerBackend):
                 self.spawnPod()                
     
     def spawnPod(self):
+        print 'spawnPod'
         size = self.map.worldSize * 0.8
         #make the pod hit the level
-        pos=None
+        pos=Vec3(0,0, 10)
         while pos==None:
-            result = self.aiWorld.world.rayTestClosest(Vec3(uniform(-size, size), uniform(-size, size), 100), Vec3(0, 0, -1))
+            x=uniform(-size, size)
+            y=uniform(-size, size)            
+            
+            result = self.aiWorld.world.rayTestClosest(Vec3(x,y, 100), Vec3(x, y, -100))
             if result.hasHit():
+                print 'hit!'
                 if self.aiWorld.navMesh.getNode(result.getHitPos()):
-                    pos=result.getHitPos()        
+                    pos=result.getHitPos()  
+                    print 'has node'      
+                else:
+                    print 'no node'    
+            else:
+                print 'no hit!', x,y
         #queue = None
         #while queue == None or queue.getNumEntries() == 0:
         #    queue = self.aiWorld.getCollisionQueue(Vec3(uniform(-size, size), uniform(-size, size), 100), Vec3(0, 0, -1))
